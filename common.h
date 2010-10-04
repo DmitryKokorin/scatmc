@@ -9,4 +9,31 @@
 #define Float float
 #endif
 
+
+
+template < typename T >
+T **allocate_2d_array( int rows, int cols)
+{
+    T **ppi = new T*[rows];
+    T *cur_ptr = new T [rows * cols];
+
+    for ( int i = 0; i < rows; ++i) {
+
+        *(ppi + i) = cur_ptr;
+         cur_ptr += cols;
+    }
+
+    return ppi;
+}
+
+
+template < typename T >
+void free_2d_array(T** array)
+{
+    delete [] *array;
+    delete [] array;
+}
+
+
+
 #endif /* _COMMON_H_ */

@@ -1,74 +1,105 @@
 #ifndef _PARTITION_H_
 #define _PARTITION_H_
 
-struct Rect
+#include "common.h"
+
+
+class GreedRect
 {
-	Rect(const Float& x1_, const Float& y1_, const Float& x2_, const Float& y2_) :
-		x1(x1_), y1(y1_), x2(x2_), y2(y2_)
-
-	Float x1, y1, x2, y2;
-}
-
-struct Node
-{
-	Node(const Rect& rect_) :
-		pParent(NULL), pChild1(NULL), pChild2(NULL), rect(rect)
-	{}
-
-	~Node()
-	{ 
-		delete pChild1;
-		delete pChild2;
+public:
+	GreedRect();
+	GreedRect(const int& x1_, const int& y1_, const int& x2_, const int& y2_) :
+		x1(x1_),
+		y1(y1_),
+		x2(x2_),
+		y2(y2_),
+		midx((x1+x2)/2),
+		midy((y1+y2)/2),
+		width(x2-x1),
+		height(y2-y1),
+		square(width*height)
+	{
 	}
+
+	GreedRect topHalf()    const { return GreedRect(x1, y1, x2, midy); }
+	GreedRect bottomHalf() const { return GreedRect(x1, midy, x2, y2); }
+	GreedRect leftHalf()   const { return GreedRect(x1, y1, midx, y2); }
+	GreedRect rightHalf()  const { return GreedRect(midx, y1, x2, y2); }
+
+	bool canSplitX()   const    { return x1 != midx; }
+	bool canSplitY()   const    { return y1 != midy; }
+
+	int x1, y1, x2, y2;
+	int midx, midy;
+	int width, height;
+	int square;
+};
+
+
+class Node
+{
+public:
+
+	Node(const GreedRect& rect_);
+	~Node();
+
+	bool isLeaf();
+
+	bool splitX();
+    bool splitY(); 
+
+	GreedRect rect;
+
 
 	Node* pParent;
 	Node* pChild1;
 	Node* pChild2;
 
-	bool isLeaf() { return (NULL == pChild1) && (NULL == pChild2)}
-
-	void splitX() 
-	{ 
-		pChild1 = new Node(Rect(x1, y1, 0.5 * (x1 + x2), y2));
-		pChild2 = new Node(Rect(0.5 * (x1 + x2), y1, x2, y2));
-		pChild1->pParent = this;
-		pChild2->pParent = this;
-	}
-
-	void splitY() 
-	{ 
-		pChild1 = new Node(Rect(x1, y1, x2, 0.5*(y1+y2)));
-		pChild2 = new Node(Rect(x1, 0.5*(y1+y2), x2, y2));
-		pChild1->pParent = this;
-		pChild2->pParent = this;
-	}
-
-
-	Rect rect;
+	
+private:	
+	//disable copying
+	Node(const Node&);
+	Node& operator=(const Node&);
 };
 
-enum TNodeStatus
+
+class Partition
 {
-	STAY_LEAF,
-	SHOULD_SPLIT_X,
-	SHOULD_SPLIT_Y,
+public:
+
+    Partition();
+    virtual ~Partition();
+
+	void setData(Float** const data_, const Float& cellSquare_);
+	void refine();
+
+	static const Float epsilon;
+	static const int   degree = 10;           
+	static const int   size   = (1 << degree) + 1;    //4097x4097
+	
+	static int rectCount;
+
+
+private:
+	
+	Float integral(const GreedRect& rect);
+	Float approxIntegral(const GreedRect& rect);
+
+	Node* pRoot;
+	Float**  data;             //knots
+	Float**  cellIntegrals;    //integrals of elementary cells
+
+	void refineNode(Node* pNode);
+
+	Float cellSquare;
+	Float fullIntegral;
+
+	//disable copying
+	Partition(const Partition&);
+	Partition& operator=(const Partition&);
 };
 
-int evaluateNodeStatus(const Node*& rect)
-{
-	return STAY_LEAF;
-}
 
-void createPartition(Node*& pRoot_)
-{
-	Node* pRoot = pRoot_;
-	Node* pNode = pRoot;
-
-	const Float epsilon = 1e-6;
-
-	while () {
-	}
-}
 
 
 #endif /* _PARTITION_H_ */

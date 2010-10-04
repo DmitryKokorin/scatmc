@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cmath>
+#include <memory.h>
 
 #include "common.h"
 
@@ -9,6 +10,13 @@
 #include "indicatrix_app.h"
 
 #include "indicatrix.h"
+
+
+//test
+#include "partition.h"
+
+
+
 
 
 int main(int /*argc*/, char ** /*argv*/)
@@ -22,10 +30,8 @@ int main(int /*argc*/, char ** /*argv*/)
 
 void IndicatrixApp::run()
 {
-	//precalculate q-tree for indicatrix integration
-
-	//calculating extinction lengths...
-	ExtLength length;
+	/*//calculating extinction lengths...
+		ExtLength length;
 
 	//scattering...
 	Photon::init(&length); 
@@ -48,5 +54,35 @@ void IndicatrixApp::run()
 		
 		printf("Catched: %d (%d scatterings)\n", cnt, ph.scatterings);
 		
-	}
+	}*/
+
+
+	//	Float data[Partition::size][Partition::size];
+	Float ** data = allocate_2d_array<Float>(Partition::size, Partition::size);
+
+	//memset(&data[0][0], 0, sizeof(data[0][0])*Partition::size*Partition::size);
+	Float phiStep   = 2*M_PI/Partition::size;
+	Float thetaStep =   M_PI/Partition::size;
+
+	printf("Precalculating greed...\n");
+	
+	Indicatrix ind(Direction(0.5*M_PI, 0.));
+	for (int i = 0; i < Partition::size; ++i)
+		for (int j = 0; j < Partition::size; ++j) {
+
+			Direction d = Direction(i*thetaStep, j*phiStep);
+			data[j][i] = ind(d)*d.sintheta;
+		}
+
+
+	printf("creating partition...\n");
+
+	Partition p;
+	p.setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
+
+	p.refine();
+
+	printf("%d\n", p.rectCount);
+
+	free_2d_array(data);
 }
