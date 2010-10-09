@@ -9,7 +9,8 @@ const Float Photon::kThetaStep = M_PI / kThetaIterations;
 const Float Photon::kPhiStep   = 2. * M_PI / kPhiIterations;
 
 Float Photon::probs[kThetaIterations*kPhiIterations] = {0};
-ExtLength* Photon::s_length    = NULL;
+ExtLength* Photon::s_length       = NULL;
+Partition* Photon::s_partition    = NULL;
 
 
 using namespace std::tr1;
@@ -22,9 +23,11 @@ variate_generator<mt19937, uniform_real<Float> > Photon::rng = variate_generator
 
 
 
-void Photon::init(ExtLength* length_, unsigned long seed_)
+void Photon::init(ExtLength* length_, Partition* partition_, unsigned long seed_)
 {
-	s_length = length_;
+	s_length    = length_;
+	s_partition = partition_;
+
 	Photon::rng_core.seed(seed_);
 }
 
@@ -34,7 +37,8 @@ Photon::Photon() :
 	d_i(M_PI*0.5, 0.),
 	scatterings(0),
 	weight(1.),
-	length(*s_length)	
+	length(*s_length),
+	partition(*s_partition)
 {
 }
 

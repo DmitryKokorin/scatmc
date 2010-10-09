@@ -12,7 +12,7 @@
 
 
 template < typename T >
-T **allocate_2d_array( int rows, int cols)
+T **allocate2dArray( int rows, int cols)
 {
     T **ppi = new T*[rows];
     T *cur_ptr = new T [rows * cols];
@@ -28,7 +28,7 @@ T **allocate_2d_array( int rows, int cols)
 
 
 template < typename T >
-void free_2d_array(T** array)
+void free2dArray(T** array)
 {
     delete [] *array;
     delete [] array;

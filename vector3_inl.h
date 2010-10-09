@@ -103,6 +103,11 @@ Vector3& Vector3::normalize()
 	return *this /= n;
 }
 
+Float    Vector3::operator*(const Vector3& rhv) const
+{
+	return x_*rhv.x_ + y_*rhv.y_ + z_*rhv.z_;
+}
+
 Vector3 operator*(const Float& lhv, const Vector3& rhv)
 {
 	return rhv*lhv;

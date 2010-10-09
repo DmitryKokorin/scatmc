@@ -2,6 +2,8 @@
 #define _VECTOR3_H_
 
 #include "common.h"
+//#include "direction.h"
+
 
 class Vector3
 {
@@ -20,6 +22,8 @@ public:
 	inline Vector3  operator* (const Float& rhv) const;
    	inline Vector3& operator/=(const Float& rhv);
 	inline Vector3  operator/ (const Float& rhv) const;
+
+	inline Float    operator*(const Vector3& rhv) const;
    
 	inline Float x() const; 
 	inline Float y() const;

@@ -9,6 +9,7 @@
 #include "vector3.h"
 
 class ExtLength;
+class Partition;
 
 
 class Photon
@@ -17,8 +18,7 @@ class Photon
 public:
 	
 	Photon();
-    static void init(ExtLength* length, unsigned long seed = 1000);
-	
+    static void init(ExtLength* length, Partition* partition, unsigned long seed = 1000);
 
 
 	void move();
@@ -42,6 +42,10 @@ protected:
 	//these two are to simulate static behaviour for a reference (without ugly pointer syntax)
 	static ExtLength* s_length;  
 	ExtLength& length;   
+
+	static Partition* s_partition;  
+	Partition& partition;   
+
 
 	static const int kThetaIterations = 1000;
 	static const int kPhiIterations   = 1000;
