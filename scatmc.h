@@ -3,10 +3,10 @@
 
 #include "photon.h"
 
-class IndicatrixApp
+class ScatMCApp
 {
 public:
-    IndicatrixApp();
+    ScatMCApp();
 
 	void run();
 	void processScattering(const Photon& ph);

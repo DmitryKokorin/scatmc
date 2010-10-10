@@ -45,7 +45,12 @@ Photon::Photon() :
 
 void Photon::move()
 {
-	Float rnd = 1. - rng();
+	Float rnd;
+	#pragma omp critical
+	{
+		rnd = 1. - rng();
+	}
+
 	Float d   = -log(rnd) * length(d_i);
 
 	pos += d*d_i.toVector3();
