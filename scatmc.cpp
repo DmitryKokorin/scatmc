@@ -13,10 +13,6 @@
 #include "scatmc.h"
 
 
-void preparePartitionTree(Partition& p);
-void createRegionsList(Partition& p);
-
-
 
 int main(int /*argc*/, char ** /*argv*/)
 {
@@ -47,7 +43,6 @@ void ScatMCApp::run()
 
 	fprintf(stderr, "preparing partition...\n");
 	Partition p;
-	preparePartitionTree(p); //TODO: move this code to Partition c'tor
 
 	fprintf(stderr, "scattering...\n");
 	Photon::init(&length, &p); 
@@ -139,90 +134,4 @@ void ScatMCApp::output()
 	fclose(det5file);
 	fclose(det100file);
 	fclose(det10000file);
-}
-
-void preparePartitionTree(Partition& p)
-{
-	Float ** data = allocate2dArray<Float>(Partition::size, Partition::size);
-
-	const Float phiStep   = 2*M_PI/Partition::size;
-	const Float thetaStep =   M_PI/Partition::size;
-
-	const Float idxIterations = 100;
-	const Float idxThetaStep  = M_PI / idxIterations;
-
-	for (int k = 0; k < idxIterations; ++k) {
-
-		Direction d_i = Direction(k*idxThetaStep, 0.);
-		Indicatrix ind(d_i);
-
-		Vector3 oX = Vector3(1, 0, 0);
-		Vector3 iVector = d_i.toVector3();
-				
-		Float   angle = acos(oX*iVector);
-
-		Float m[3][3];  //rotation matrix
-
-		if (angle) {
-
-			Vector3 axis  = crossProduct(iVector, oX).normalize(); 
-
-			{
-				Float rcos = cos(angle);
-				Float rsin = sin(angle);
-
-				Float u = axis.x(); 
-				Float v = axis.y(); 
-				Float w = axis.z(); 
-
-				m[0][0] =      rcos + u*u*(1-rcos);
-				m[1][0] =  w * rsin + v*u*(1-rcos);
-				m[2][0] = -v * rsin + w*u*(1-rcos);
-				m[0][1] = -w * rsin + u*v*(1-rcos);
-				m[1][1] =      rcos + v*v*(1-rcos);
-				m[2][1] =  u * rsin + w*v*(1-rcos);
-				m[0][2] =  v * rsin + u*w*(1-rcos);
-				m[1][2] = -u * rsin + v*w*(1-rcos);
-				m[2][2] =      rcos + w*w*(1-rcos);
-			}
-
-		}
-		else {
-
-			memset(&m, 0, sizeof(m));
-			m[0][0] = m[1][1] = m[2][2] = 1.;
-		}
-
-		for (int i = 0; i < Partition::size; ++i)
-			for (int j = 0; j < Partition::size; ++j) {
-
-				/*
-				Direction d_s = Direction(i*thetaStep, j*phiStep);
-				data[j][i] = ind(d_s)*d_s.sintheta;
-				*/
-
-				Float t = i*thetaStep;
-				Float p = j*phiStep;
-
-				Vector3 rel = Direction(t,p).toVector3();
-				Vector3 abs(m[0][0]*rel.x() + m[0][1]*rel.y() + m[0][2]*rel.z(),
-							m[1][0]*rel.x() + m[1][1]*rel.y() + m[1][2]*rel.z(),
-							m[2][0]*rel.x() + m[2][1]*rel.y() + m[2][2]*rel.z());
-
-				Direction d_s = Direction(abs);
-				data[j][i] = ind(d_s)*d_s.sintheta;
-			}
-
-		p.setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
-		p.refine();
-
-		//printf("%d nodes...\n", p.rectCount);
-	}
-
-	free2dArray(data);
-
-}
-
-void createRegionsList(Partition& /*p*/)
-{
 }

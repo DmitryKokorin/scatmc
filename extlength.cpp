@@ -16,7 +16,8 @@ const Float ExtLength::kResolution = 0.5 * M_PI / (kPoints-1);
 
 
 
-ExtLength::ExtLength(const int kThetaIterations /*= 1000*/, const int kPhiIterations /*= 1000*/)
+ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
+                     const int kPhiIterations /*= 1000*/)
 {
 
    	const Float kThetaStep = M_PI / kThetaIterations;

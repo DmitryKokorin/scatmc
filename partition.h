@@ -1,67 +1,22 @@
 #ifndef _PARTITION_H_
 #define _PARTITION_H_
 
+#include <list>
+
 #include "common.h"
+#include "node.h"
 
-
-class GreedRect
+struct Knot
 {
-public:
-	GreedRect();
-	GreedRect(const int& x1_, const int& y1_, const int& x2_, const int& y2_) :
-		x1(x1_),
-		y1(y1_),
-		x2(x2_),
-		y2(y2_),
-		midx((x1+x2)/2),
-		midy((y1+y2)/2),
-		width(x2-x1),
-		height(y2-y1),
-		square(width*height)
-	{
-	}
+	Knot(const Float x_, const Float y_, const int id_) :
+		x(x_),
+		y(y_),
+		id(id_)
+        {}
 
-	GreedRect topHalf()    const { return GreedRect(x1, y1, x2, midy); }
-	GreedRect bottomHalf() const { return GreedRect(x1, midy, x2, y2); }
-	GreedRect leftHalf()   const { return GreedRect(x1, y1, midx, y2); }
-	GreedRect rightHalf()  const { return GreedRect(midx, y1, x2, y2); }
-
-	bool canSplitX()   const    { return x1 != midx; }
-	bool canSplitY()   const    { return y1 != midy; }
-
-	int x1, y1, x2, y2;
-	int midx, midy;
-	int width, height;
-	int square;
+	Float x, y;
+	int id;
 };
-
-
-class Node
-{
-public:
-
-	Node(const GreedRect& rect_);
-	~Node();
-
-	bool isLeaf();
-
-	bool splitX();
-    bool splitY(); 
-
-	GreedRect rect;
-
-
-	Node* pParent;
-	Node* pChild1;
-	Node* pChild2;
-
-	
-private:	
-	//disable copying
-	Node(const Node&);
-	Node& operator=(const Node&);
-};
-
 
 class Partition
 {
@@ -75,7 +30,7 @@ public:
 
 	static const Float epsilon;
 	static const int   degree = 10;           
-	static const int   size   = (1 << degree) + 1;    //4097x4097
+	static const int   size   = (1 << degree) + 1;    //1025x1025
 	
 	static int rectCount;
 
@@ -85,6 +40,9 @@ private:
 	Float integral(const GreedRect& rect);
 	Float approxIntegral(const GreedRect& rect);
 
+	void preparePartitionTree();
+	void processTree();	
+
 	Node* pRoot;
 	Float**  data;             //knots
 	Float**  cellIntegrals;    //integrals of elementary cells
@@ -93,6 +51,8 @@ private:
 
 	Float cellSquare;
 	Float fullIntegral;
+
+	std::list<Knot> knots;
 
 	//disable copying
 	Partition(const Partition&);
