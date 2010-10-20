@@ -16,7 +16,7 @@
 
 int main(int /*argc*/, char ** /*argv*/)
 {
-    ScatMCApp app;
+    ScatMCApp app;	//TODO: parse some params here
     app.run();
     
 	return 0;
@@ -30,7 +30,8 @@ ScatMCApp::ScatMCApp()
 	memset(&det2,     0, sizeof(det2));
 	memset(&det5,     0, sizeof(det5));
 	memset(&det100,   0, sizeof(det100));
-	memset(&det10000, 0, sizeof(det10000));
+	memset(&detall,   0, sizeof(detall));
+	memset(&lastdet,  0, sizeof(lastdet));
 }
 
 
@@ -44,14 +45,15 @@ void ScatMCApp::run()
 	fprintf(stderr, "preparing partition...\n");
 	Partition p;
 
-	fprintf(stderr, "scattering...\n");
+/*	fprintf(stderr, "scattering...\n");
 	Photon::init(&length, &p); 
 
 	int cnt = 0;
+	bool ready = false;
 
 	#pragma omp parallel for
-	for (int i = 0; i < maxPhotons; ++i) {
-		
+	for (int i = 0; i < maxPhotons; ++i) 
+		if (!ready) {
 		Photon ph;
 		
 		while (ph.pos.z() >= 0 && ph.scatterings < maxScatterings) {
@@ -66,10 +68,13 @@ void ScatMCApp::run()
 		{
 			++cnt;
 			fprintf(stderr, "%d\t%d\n", cnt, ph.scatterings);
+			if (0 == cnt % 100)
+				ready = checkResultsReady();
 		}
 	}
 
 	output();
+	*/
 }
 
 
@@ -81,7 +86,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 	for (int i = 0; i < thetaSize; ++i)
 		for (int j = 0; j < phiSize; ++j) {
 
-			Float res = 0;
+			Float res = 0;	//FIXME
 
 			if (1 == ph.scatterings)
 				det1[j][i] += res;
@@ -95,7 +100,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 			if (100 <= ph.scatterings)
 				det100[j][i] += res;
 
-			det10000[j][i] += res;
+			detall[j][i] += res;
 		}
 	}
 }
@@ -107,13 +112,13 @@ void ScatMCApp::output()
 		 *det2file     = 0,
 		 *det5file     = 0,
 		 *det100file   = 0,
-		 *det10000file = 0;
+		 *detallfile   = 0;
 
 	det1file     = fopen("output/peak1.txt", "w");
 	det2file     = fopen("output/peak2.txt", "w");
 	det5file     = fopen("output/peak5.txt", "w");
 	det100file   = fopen("output/peak100.txt", "w");
-	det10000file = fopen("output/peak1000.txt", "w");
+	detallfile = fopen("output/peakall.txt", "w");
 
 	for (int i = 0; i < thetaSize; ++i)
 		for (int j = 0; j < phiSize; ++j) {
@@ -126,12 +131,30 @@ void ScatMCApp::output()
 			fprintf(det2file,     "%f\t%f\t%f\n", theta, phi, det2[j][i]);
 			fprintf(det5file,     "%f\t%f\t%f\n", theta, phi, det5[j][i]);
 			fprintf(det100file,   "%f\t%f\t%f\n", theta, phi, det100[j][i]);
-			fprintf(det10000file, "%f\t%f\t%f\n", theta, phi, det10000[j][i]);
+			fprintf(detallfile, "%f\t%f\t%f\n", theta, phi, detall[j][i]);
 		}
 
 	fclose(det1file);
 	fclose(det2file);
 	fclose(det5file);
 	fclose(det100file);
-	fclose(det10000file);
+	fclose(detallfile);
+}
+
+bool ScatMCApp::checkResultsReady()
+{
+	int size = phiSize*thetaSize;
+	for (int i = 0; i < size; ++i) {
+
+		Float err =  fabs(((*detall)[i] - (*lastdet)[i]) / (*lastdet)[i]);
+		if (err > 0.01) {
+
+			fprintf(stderr, "relative error: %f\n", err);
+			memcpy(lastdet, detall, sizeof(lastdet));
+			
+			return false;
+		}
+	}
+		
+	return true;
 }

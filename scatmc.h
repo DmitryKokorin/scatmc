@@ -9,10 +9,13 @@ public:
     ScatMCApp();
 
 	void run();
-	void processScattering(const Photon& ph);
-	void output();
 
 private:
+
+	void processScattering(const Photon& ph);
+	void output();
+	bool checkResultsReady();
+
 
 	static const int   maxPhotons     = 100;
 	static const int   maxScatterings = 1000;
@@ -22,11 +25,15 @@ private:
 
 	static const Float thetaMax;
 
+	//TODO: list of arrays for detected intensity
+
 	Float det1[phiSize][thetaSize];
 	Float det2[phiSize][thetaSize];
 	Float det5[phiSize][thetaSize];
 	Float det100[phiSize][thetaSize];
-	Float det10000[phiSize][thetaSize];
+	Float detall[phiSize][thetaSize];
+
+	Float lastdet[phiSize][thetaSize];
 };
 
 #endif /* _INDICATRIX_APP_H_ */

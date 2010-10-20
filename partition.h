@@ -5,18 +5,8 @@
 
 #include "common.h"
 #include "node.h"
+#include "rect.h"
 
-struct Knot
-{
-	Knot(const Float x_, const Float y_, const int id_) :
-		x(x_),
-		y(y_),
-		id(id_)
-        {}
-
-	Float x, y;
-	int id;
-};
 
 class Partition
 {
@@ -34,6 +24,8 @@ public:
 	
 	static int rectCount;
 
+	std::list<Rect> rects;
+
 
 private:
 	
@@ -41,7 +33,8 @@ private:
 	Float approxIntegral(const GreedRect& rect);
 
 	void preparePartitionTree();
-	void processTree();	
+	
+	void processTreeNode(Node* pNode);
 
 	Node* pRoot;
 	Float**  data;             //knots
@@ -51,8 +44,6 @@ private:
 
 	Float cellSquare;
 	Float fullIntegral;
-
-	std::list<Knot> knots;
 
 	//disable copying
 	Partition(const Partition&);

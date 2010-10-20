@@ -2,6 +2,7 @@
 #define _NODE_H_
 
 
+
 class GreedRect
 {
 public:

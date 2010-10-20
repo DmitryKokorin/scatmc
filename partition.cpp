@@ -4,22 +4,23 @@
 
 #include "common.h"
 #include "indicatrix.h"
+#include "rect.h"
 #include "partition.h"
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 const Float Partition::epsilon = 0.01;
 int Partition::rectCount = 0;
 
 Partition::Partition() :
+	rects(),
 	pRoot(NULL),
 	data(NULL),
 	cellIntegrals(NULL),
 	cellSquare(0.),
-	fullIntegral(0.),
-	knots()
+	fullIntegral(0.)
 {
 	pRoot = new Node(GreedRect(0,0, size-1, size-1));
 	rectCount = 1;
@@ -64,8 +65,11 @@ void Partition::refineNode(Node* pNode)
 
 		if (pNode->rect.canSplitX() && pNode->rect.canSplitY()) {
 
-			Float xSplitApproxIntegral = approxIntegral(pNode->rect.leftHalf()) + approxIntegral(pNode->rect.rightHalf());
-			Float ySplitApproxIntegral = approxIntegral(pNode->rect.topHalf()) + approxIntegral(pNode->rect.bottomHalf());
+			Float xSplitApproxIntegral = approxIntegral(pNode->rect.leftHalf()) +
+											approxIntegral(pNode->rect.rightHalf());
+											
+			Float ySplitApproxIntegral = approxIntegral(pNode->rect.topHalf()) +
+											approxIntegral(pNode->rect.bottomHalf());
  
 			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
 			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
@@ -84,7 +88,9 @@ void Partition::refineNode(Node* pNode)
 		}
 		else if (pNode->rect.canSplitX()) {
 
-			Float xSplitApproxIntegral = approxIntegral(pNode->rect.leftHalf()) + approxIntegral(pNode->rect.rightHalf());
+			Float xSplitApproxIntegral = approxIntegral(pNode->rect.leftHalf()) +
+											approxIntegral(pNode->rect.rightHalf());
+											
 			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
 
 			if (xSplitError > rectMaxError) {
@@ -96,7 +102,9 @@ void Partition::refineNode(Node* pNode)
 		}
 		else if (pNode->rect.canSplitY()) {
 
-			Float ySplitApproxIntegral = approxIntegral(pNode->rect.topHalf()) + approxIntegral(pNode->rect.bottomHalf());
+			Float ySplitApproxIntegral = approxIntegral(pNode->rect.topHalf()) +
+											approxIntegral(pNode->rect.bottomHalf());
+											
 			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
 
 			if (ySplitError > rectMaxError) {
@@ -144,7 +152,11 @@ Float Partition::integral(const GreedRect& rect)
 
 Float Partition::approxIntegral(const GreedRect& rect)
 {
-	return 0.25 * (data[rect.y1][rect.x1] + data[rect.y2][rect.x1] + data[rect.y1][rect.x2] + data[rect.y2][rect.x2]) * (rect.square * cellSquare);
+	return 0.25 * (	data[rect.y1][rect.x1] +
+					data[rect.y2][rect.x1] +
+					data[rect.y1][rect.x2] +
+					data[rect.y2][rect.x2]) *
+		(rect.square * cellSquare);
 }
 
 
@@ -222,14 +234,29 @@ void Partition::preparePartitionTree()
 
 		setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
 		refine();
-
-		//printf("%d nodes...\n", p.rectCount);
 	}
 
 	free2dArray(data);
+
+	fprintf(stderr, "Partitioning done, %d rects...\n", rectCount);
 }
 
-void Partition::processTree()
+void Partition::processTreeNode(Node* pNode)
 {
+	if (pNode->isLeaf()) {
+
+/*		int 	tli, tri, bli, bri;	//indeces
+		
+		Knot 	tl, tr, bl, br;
+		Rect rect;
+
+		tl = pNode->
+*/
+	}
+	else {
+
+		processTreeNode(pNode->pChild1);
+		processTreeNode(pNode->pChild2);
+	}
 }
 

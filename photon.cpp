@@ -18,12 +18,15 @@ using namespace std::tr1;
 mt19937 Photon::rng_core = mt19937();
 uniform_real<Float> Photon::dist = uniform_real<Float> (0., 1.); 
 
-variate_generator<mt19937, uniform_real<Float> > Photon::rng = variate_generator<mt19937, uniform_real<Float> > (rng_core, dist);
+variate_generator<mt19937, uniform_real<Float> > Photon::rng =
+		variate_generator<mt19937, uniform_real<Float> > (rng_core, dist);
 
 
 
 
-void Photon::init(ExtLength* length_, Partition* partition_, unsigned long seed_)
+void Photon::init(	ExtLength* length_,
+					Partition* partition_,
+					unsigned long seed_)
 {
 	s_length    = length_;
 	s_partition = partition_;
@@ -82,7 +85,8 @@ void Photon::scatter()
 			probs[index++] = sum;
 		}
 	}
-	
+
+	//FIXME: use precreated partition
 	//choose scattering direction
 	std::tr1::uniform_real<Float> probs_dist(0, sum);
 	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
@@ -98,7 +102,6 @@ void Photon::scatter()
 	
 	d_i = Direction(theta, phi);
 
-	//	printf("%d\n", scatterings);
 
 	scatterings++;
 }
