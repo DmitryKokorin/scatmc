@@ -66,7 +66,7 @@ void Photon::scatter()
 	Indicatrix ind = Indicatrix(d_i);
 
 	Float sum   = 0.;
-	int    index = 0;
+	int   index = 0;
  
 	for (int i = 0; i < kThetaIterations; ++i) {
 			

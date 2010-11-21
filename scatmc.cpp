@@ -14,17 +14,20 @@
 
 
 
-int main(int /*argc*/, char ** /*argv*/)
+int main(int argc, char ** argv)
 {
-    ScatMCApp app;	//TODO: parse some params here
-    app.run();
+    ScatMCApp app;
+	if (app.getOpts(argc, argv))
+    	app.run();
     
 	return 0;
 }
 
 const Float ScatMCApp::thetaMax = 1e-5;
 
-ScatMCApp::ScatMCApp() 
+
+ScatMCApp::ScatMCApp() :
+	seed(1000)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -34,7 +37,22 @@ ScatMCApp::ScatMCApp()
 	memset(&lastdet,  0, sizeof(lastdet));
 }
 
+bool ScatMCApp::getOpts(int argc, char ** argv)
+{
+	switch (argc) {
+		case 1:
+			seed = 1000;
+			break;
+		case 2:
+			seed = atoi(argv[1]);
+			break;
+		default:
+			fprintf(stderr, "Usage: %s [rng seed]\n", argv[0]);
+			return false;
+	}
 
+	return true;
+}
 
 
 void ScatMCApp::run()
@@ -45,8 +63,8 @@ void ScatMCApp::run()
 	fprintf(stderr, "preparing partition...\n");
 	Partition p;
 
-/*	fprintf(stderr, "scattering...\n");
-	Photon::init(&length, &p); 
+	fprintf(stderr, "scattering...\n");
+	Photon::init(&length, &p, getSeed()); 
 
 	int cnt = 0;
 	bool ready = false;
@@ -54,27 +72,27 @@ void ScatMCApp::run()
 	#pragma omp parallel for
 	for (int i = 0; i < maxPhotons; ++i) 
 		if (!ready) {
-		Photon ph;
+
+			Photon ph;
 		
-		while (ph.pos.z() >= 0 && ph.scatterings < maxScatterings) {
+			while (ph.pos.z() >= 0 && ph.scatterings < maxScatterings) {
 
-			ph.move();
-			ph.scatter();
+				ph.move();
+				ph.scatter();
 
-			processScattering(ph);
+				processScattering(ph);
+			}
+
+			#pragma omp critical
+			{
+				++cnt;
+				fprintf(stderr, "%d\t%d\n", cnt, ph.scatterings);
+				if (0 == cnt % 100)
+					ready = checkResultsReady();
+			}
 		}
-
-		#pragma omp critical
-		{
-			++cnt;
-			fprintf(stderr, "%d\t%d\n", cnt, ph.scatterings);
-			if (0 == cnt % 100)
-				ready = checkResultsReady();
-		}
-	}
 
 	output();
-	*/
 }
 
 

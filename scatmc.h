@@ -9,6 +9,8 @@ public:
     ScatMCApp();
 
 	void run();
+	bool getOpts(int argc, char ** argv);
+	int  getSeed() {return seed;}
 
 private:
 
@@ -16,8 +18,9 @@ private:
 	void output();
 	bool checkResultsReady();
 
+	int seed;
 
-	static const int   maxPhotons     = 100;
+	static const int   maxPhotons     = 101;
 	static const int   maxScatterings = 1000;
 
 	static const int   phiSize    = 16;
