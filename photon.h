@@ -5,8 +5,9 @@
 #include <tr1/random>
 
 
-#include "direction.h"
+//#include "direction.h"
 #include "vector3.h"
+#include "angle.h"
 
 class ExtLength;
 class Partition;
@@ -25,7 +26,8 @@ public:
 	void scatter();
 
 	Vector3   pos;
-	Direction d_i;
+	Vector3   s_i;
+	Angle     a_i;
 
 	int scatterings;
 	Float weight;

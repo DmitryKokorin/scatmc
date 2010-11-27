@@ -3,15 +3,9 @@
 
 namespace Optics {
 
-//hardware constants
-
-#if defined DOUBLE_PRECISION	
-const Float kMachineEpsilon = 1e-17;
-#else
-const Float kMachineEpsilon = 1e-6;
-#endif
-
 //physical constants
+
+const Vector3 n = Vector3(1., 0., 0.);	
 
 const Float eps_par = 3.0;
 const Float eps_perp = 2.2;

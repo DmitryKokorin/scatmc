@@ -2,6 +2,7 @@
 
 #include "extlength.h"
 #include "indicatrix.h"
+#include "optics.h"
 #include "photon.h"
 
 
@@ -37,7 +38,8 @@ void Photon::init(	ExtLength* length_,
 
 Photon::Photon() :
 	pos(0.,0.,0.),
-	d_i(M_PI*0.5, 0.),
+	s_i(0., 0., 1),
+	a_i(Angle(s_i, Optics::n)),
 	scatterings(0),
 	weight(1.),
 	length(*s_length),
@@ -54,18 +56,20 @@ void Photon::move()
 		rnd = 1. - rng();
 	}
 
-	Float d   = -log(rnd) * length(d_i);
+	Float d   = -log(rnd) * length(Angle(s_i, Optics::n));
 
-	pos += d*d_i.toVector3();
+	pos += d*s_i;
 }
 
 void Photon::scatter()
 {
 	//prepare probs array
 
-	Indicatrix ind = Indicatrix(d_i);
+	Angle   a_i = Angle(s_i, Optics::n);
+	Vector3 k_i = Optics::ke(s_i, a_i);
+	Indicatrix ind = Indicatrix(k_i, Optics::n);
 
-	Float sum   = 0.;
+/*	Float sum   = 0.;
 	int   index = 0;
  
 	for (int i = 0; i < kThetaIterations; ++i) {
@@ -101,7 +105,7 @@ void Photon::scatter()
 	Float phi   = (Float)(index % kPhiIterations)*kPhiStep;
 	
 	d_i = Direction(theta, phi);
-
+*/
 
 	scatterings++;
 }

@@ -4,7 +4,7 @@
 #include <cstdio>
 
 
-#include "direction.h"
+//#include "direction.h"
 #include "optics.h"
 #include "indicatrix.h"
 #include "extlength.h"
@@ -23,13 +23,16 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
    	const Float kThetaStep = M_PI / kThetaIterations;
 	const Float kPhiStep   = 2. * M_PI / kPhiIterations;
 
-	
 	Float theta_i = 0.;
+	Float phi_i = 0.;
 
 
 	for (int i = 0; i < kPoints; ++i, theta_i += kResolution) {
 
-		Indicatrix ind = Indicatrix(Direction(theta_i, 0.));
+		Angle   a_i = Angle(theta_i);
+		Vector3 k_i = Vector3(a_i.costheta, a_i.sintheta*sin(phi_i), a_i.sintheta*cos(phi_i))*ne(a_i);
+		Indicatrix ind = Indicatrix(k_i, n);
+
 		Float integral = 0.;
 
 	
@@ -42,16 +45,13 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 			
 				Float theta_s = j*kThetaStep;
 				Float phi_s   = 0.;
-
-				Direction d = Direction(theta_s, phi_s);
-
+			
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
 				
-					d.phi    = phi_s;
-					d.sinphi = sin(phi_s);
-					d.cosphi = cos(phi_s);
+					Vector3 k_s = Vector3(cos(theta_s), sin(theta_s)*sin(phi_s), sin(theta_s)*cos(phi_s))*ne(a_i);
+					Angle a_s   = Angle(k_s, n);
 
-					t_integral += d.sintheta * ind(d)*cosde(d)/f2(d) ;
+					t_integral += sin(theta_s) * ind(k_s)*cosde(a_s)/f2(a_s) ;
 				}
 			}
 
@@ -69,12 +69,12 @@ ExtLength::~ExtLength()
 {
 }
 
-Float ExtLength::operator()(const Direction& d) const//TODO: rewrite
+Float ExtLength::operator()(const Angle& a) const//TODO: rewrite
 {
-	if (d.theta < 0 || d.theta >= M_PI)
+	if (a.theta < 0 || a.theta >= M_PI)
 		return 0.;
 
-	Float theta = (d.theta < M_PI * 0.5) ? d.theta : (M_PI - d.theta);
+	Float theta = (a.theta < M_PI * 0.5) ? a.theta : (M_PI - a.theta);
 
 	//locate index
 	Float mu = theta / kResolution;

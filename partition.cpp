@@ -3,7 +3,10 @@
 #include <memory.h>
 
 #include "common.h"
+#include "optics.h"
 #include "indicatrix.h"
+#include "matrix3.h"
+#include "coords.h"
 #include "rect.h"
 #include "partition.h"
 
@@ -159,7 +162,6 @@ Float Partition::approxIntegral(const GreedRect& rect)
 		(rect.square * cellSquare);
 }
 
-
 void Partition::preparePartitionTree()
 {
 	Float ** data = allocate2dArray<Float>(Partition::size, Partition::size);
@@ -167,69 +169,46 @@ void Partition::preparePartitionTree()
 	const Float phiStep   = 2*M_PI/Partition::size;
 	const Float thetaStep =   M_PI/Partition::size;
 
-	const Float idxIterations = 100;
-	const Float idxThetaStep  = M_PI / idxIterations;
+	const Float idxIterations = 1000;
+//	const Float idxThetaStep  = M_PI / idxIterations;
 
-	for (int k = 0; k < idxIterations; ++k) {
 
-		Direction d_i = Direction(k*idxThetaStep, 0.);
-		Indicatrix ind(d_i);
+	for (int k = 1; k < idxIterations; ++k) { //don't refine partition for "k_i || n" case
 
-		Vector3 oX = Vector3(1, 0, 0);
-		Vector3 iVector = d_i.toVector3();
-				
-		Float   angle = acos(oX*iVector);
+		//angle between k_i and director
+		Angle   a_i = Angle(k*thetaStep);
 
-		Float m[3][3];  //rotation matrix
+		//here we construct some k_i, that has a_i angle to director
+		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
+//		Vector3 k_i = s_i*Optics::ne(a_i);
 
-		if (angle) {
+		//now we can create coordinate system
+		Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
+		Vector3 v3 = crossProduct(v2, s_i).normalize();
 
-			Vector3 axis  = crossProduct(iVector, oX).normalize(); 
+		
+		//create matrix
+		Vector3 ox = Vector3(1., 0., 0.);
+		Vector3 oy = Vector3(0., 1., 0.);
+		Vector3 oz = Vector3(0., 0., 1.);
 
-			{
-				Float rcos = cos(angle);
-				Float rsin = sin(angle);
+		Matrix3 mtx = createTransformMatrix(s_i, v2, v3, ox, oy, oz);
+//		Matrix3 mtx = createTransformMatrix(ox, oy, oz, s_i, v2, v3);
 
-				Float u = axis.x(); 
-				Float v = axis.y(); 
-				Float w = axis.z(); 
+		Vector3 nn = mtx*Optics::n;
 
-				m[0][0] =      rcos + u*u*(1-rcos);
-				m[1][0] =  w * rsin + v*u*(1-rcos);
-				m[2][0] = -v * rsin + w*u*(1-rcos);
-				m[0][1] = -w * rsin + u*v*(1-rcos);
-				m[1][1] =      rcos + v*v*(1-rcos);
-				m[2][1] =  u * rsin + w*v*(1-rcos);
-				m[0][2] =  v * rsin + u*w*(1-rcos);
-				m[1][2] = -u * rsin + v*w*(1-rcos);
-				m[2][2] =      rcos + w*w*(1-rcos);
-			}
+		Indicatrix ind = Indicatrix(ox, nn);
 
-		}
-		else {
-
-			memset(&m, 0, sizeof(m));
-			m[0][0] = m[1][1] = m[2][2] = 1.;
-		}
-
+		//calculate array values
 		for (int i = 0; i < Partition::size; ++i)
 			for (int j = 0; j < Partition::size; ++j) {
 
-				/*
-				Direction d_s = Direction(i*thetaStep, j*phiStep);
-				data[j][i] = ind(d_s)*d_s.sintheta;
-				*/
 
 				Float t = i*thetaStep;
 				Float p = j*phiStep;
 
-				Vector3 rel = Direction(t,p).toVector3();
-				Vector3 abs(m[0][0]*rel.x() + m[0][1]*rel.y() + m[0][2]*rel.z(),
-							m[1][0]*rel.x() + m[1][1]*rel.y() + m[1][2]*rel.z(),
-							m[2][0]*rel.x() + m[2][1]*rel.y() + m[2][2]*rel.z());
-
-				Direction d_s = Direction(abs);
-				data[j][i] = ind(d_s)*d_s.sintheta;
+				Vector3 k_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
+				data[j][i]  = ind(k_s)*sin(t);
 			}
 
 		setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
@@ -245,13 +224,6 @@ void Partition::processTreeNode(Node* pNode)
 {
 	if (pNode->isLeaf()) {
 
-/*		int 	tli, tri, bli, bri;	//indeces
-		
-		Knot 	tl, tr, bl, br;
-		Rect rect;
-
-		tl = pNode->
-*/
 	}
 	else {
 

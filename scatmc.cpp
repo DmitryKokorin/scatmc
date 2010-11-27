@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-#include "direction.h"
+//#include "direction.h"
 #include "extlength.h"
 #include "photon.h"
 #include "indicatrix.h"
@@ -63,7 +63,7 @@ void ScatMCApp::run()
 	fprintf(stderr, "preparing partition...\n");
 	Partition p;
 
-	fprintf(stderr, "scattering...\n");
+/*	fprintf(stderr, "scattering...\n");
 	Photon::init(&length, &p, getSeed()); 
 
 	int cnt = 0;
@@ -92,7 +92,7 @@ void ScatMCApp::run()
 			}
 		}
 
-	output();
+	output();*/
 }
 
 

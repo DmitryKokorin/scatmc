@@ -3,17 +3,15 @@
 
 #include <cmath>
 
-#include "direction.h"
+#include "angle.h"
 #include "vector3.h"
 
 
 namespace Optics {
 
-//hardware constants
-	
-extern const Float kMachineEpsilon;
-
 //physical constants
+
+extern const Vector3 n;  //director
 
 extern const Float eps_par;
 extern const Float eps_perp;
@@ -41,52 +39,60 @@ extern const Float add;
 
 
 
-inline Float ne(const Direction& d)
+inline Float ne(const Angle& a)
 {
-	return sqrt(eps_perp*eps_par / (eps_perp + eps_a*d.cos2theta));
+	return sqrt(eps_perp*eps_par / (eps_perp + eps_a*a.cos2theta));
 }
 
-inline Float een(const Direction& d)
+inline Float een(const Angle& a)
 {
-	return eps_perp*d.sintheta/sqrt(eps_perp*eps_perp*d.sin2theta + eps_par*eps_par*d.cos2theta);
+	return eps_perp*a.sintheta/sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta);
 }
 
 
-inline Float cosde(const Direction& d)
+inline Float cosde(const Angle& a)
 {
-	return (eps_perp*d.sin2theta + eps_par*d.cos2theta) /                               \
-		sqrt(eps_perp*eps_perp*d.sin2theta + eps_par*eps_par*d.cos2theta);
+	return (eps_perp*a.sin2theta + eps_par*a.cos2theta) /                               \
+		sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta);
 }
 
-inline Float f2(const Direction& d)
+inline Float f2(const Angle& a)
 {
-	return (eps_perp*d.sin2theta + eps_par*d.cos2theta) *                               \
-		   (eps_perp*eps_perp*d.sin2theta + eps_par*eps_par*d.cos2theta) /              \
+	return (eps_perp*a.sin2theta + eps_par*a.cos2theta) *                               \
+		   (eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta) /              \
 		   (eps_par*eps_perp*eps_perp);
 }
 
-
-inline Vector3 ke(const Direction& d)
+inline Vector3 ke(const Vector3& direction, const Angle& a)
 {
-	Float  n = ne(d);
-	return  (d.toVector3())*=n;
+	Float n = ne(a);
+	return Vector3(direction).normalize()*n;
 }
 
-
-__inline__ __attribute__((always_inline)) Vector3 ee(const Direction& d) 
+inline Vector3 ke(const Vector3& direction, const Vector3& n)
 {
-	if (fabs(d.sintheta) > kMachineEpsilon) {
-	
-		Float iNo = (eps_perp + eps_a*d.cos2theta) / 
-			(eps_perp*d.sintheta*sqrt(eps_perp*eps_perp*d.sin2theta + eps_par*eps_par*d.cos2theta));
+	return ke(direction, Angle(direction, n));
+}
 
-		return (Vector3(eps_perp, 0., 0.) - ne(d)*d.costheta*ke(d)) * iNo;
+//s is a unit vector, s = k/|k|
+inline Vector3 ee(const Vector3& s, const Vector3& n, const Angle& a)
+{
+	if (fabs(a.sintheta) > kMachineEpsilon) {
+
+		Float iNo = 1./ (a.sintheta*sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta));
+
+		return (s*eps_par*a.costheta - n*(eps_par*a.cos2theta + eps_perp*a.sin2theta)) * iNo; 
 	}
-	else {  // along the optical axis, so we use an expression of the ordinary beam polarization
-		
-        return crossProduct(d.toVector3(), Vector3(1., 0., 0.)).normalize();
-	} 
-} 
+	else { //along the optical axis, so we use the expression for the ordinary beam polarization
+
+		return crossProduct(s, n).normalize();
+	}
+}
+
+inline Vector3 ee(const Vector3& s, const Vector3& n)
+{
+	return ee(s, n, Angle(s, n));
+}
 
 }  //namespace Optics
 

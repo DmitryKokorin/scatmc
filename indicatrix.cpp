@@ -12,56 +12,61 @@ const Float Indicatrix::kCalculationEpsilon = kMachineEpsilon;
 
 
 
-Indicatrix::Indicatrix(const Direction& d_i_) :
-	d_i(d_i_),
-	k_i(),
+Indicatrix::Indicatrix(const Vector3& k_i_, const Vector3& n_) :
+	k_i(k_i_),
+	n(n_),
+	a_i(k_i, n),
 	ee_i(),
 	een_i(),
 	factor1()
 {
-	ee_i  = ee(d_i);
-	een_i = een(d_i); 
-	k_i   = ke(d_i);
-	factor1 = s0/(ne(d_i)*cosde(d_i));
+	ee_i  = ee(k_i, n, a_i);
+	een_i = een(a_i); 
+	factor1 = s0/(ne(a_i)*cosde(a_i));
 }
 
 Indicatrix::~Indicatrix()
 {
 }
 
-Float Indicatrix::operator()(const Direction& d_s)
+Float Indicatrix::operator()(const Vector3& k_s)
 {
-	Float cosde_s = cosde(d_s);
-	Float res = factor1 * ne(d_s)/(cosde_s*cosde_s*cosde_s);
+	Angle a_s = Angle(k_s, n);
+	Float cosde_s = cosde(a_s);
+	Float res = factor1 * ne(a_s)/(cosde_s*cosde_s*cosde_s);
 
-	Vector3 qee = ke(d_s)- k_i;
-	Float   qeeperp = sqrt(qee.y()*qee.y() + qee.z()*qee.z());
+	Vector3 qee     = k_s- k_i;
+	Vector3 qeeperp = qee - n*(qee*n);
+
+	Vector3 a1 = qeeperp; 
+
+	if (a1.norm() < qee.norm()*kCalculationEpsilon) { //along the optical axis
+		
+		//we need some a1 vector here, any unit vector that is perpendicular to n
+
+		if (fabs(n.y()) > kCalculationEpsilon || fabs(n.z()) > kCalculationEpsilon)
+			a1 = Vector3(1., 0., 0.);
+		else
+			a1 = Vector3(0., 1., 0.);
+
+		a1 -= n*(a1*n); 
+	}
+
+	a1.normalize();
+
+	Vector3 a2 = crossProduct(n, a1);
+	a2.normalize();   //to be sure
 	
-	Vector3 ee_s  = ee(d_s);
-	Float   een_s = een(d_s);
+	Vector3 ee_s  = ee(k_s, n, a_s);
+	Float   een_s = een(a_s);
 
 	Float eea1, eea2, eeia1, eeia2;
 
-	if (qeeperp > qee.norm()*kCalculationEpsilon) {
+	eea1  = ee_s*a1;
+	eea2  = ee_s*a2;
+	eeia1 = ee_i*a1;
+	eeia2 = ee_i*a2;
 
-		Float  iqeeperp = 1. / qeeperp;
-
-		eea1  = (-ee_s.y()*qee.y() - ee_s.z()*qee.z()) * iqeeperp;
-		eea2  = ( ee_s.y()*qee.z() - ee_s.z()*qee.y()) * iqeeperp;
-		eeia1 = (-ee_i.y()*qee.y() - ee_i.z()*qee.z()) * iqeeperp;
-		eeia2 = ( ee_i.y()*qee.z() - ee_i.z()*qee.y()) * iqeeperp;
-	}
-	else {  
-
-		// 0/0 indeterminateness, we can choose a1 and a2. 
-		// a1 = (0,1,0), a2 = (0,0,1)
-
-		eea1  = ee_s.y();
-		eea2  = ee_s.z();
-		eeia1 = ee_i.y();
-		eeia2 = ee_i.z();
- 	}
-	
 	res *= (eeia1*eeia1*een_s*een_s + 2.*eeia1*een_s*een_i*eea1 + eea1*eea1*een_i*een_i) /
 		       (t1*qeeperp*qeeperp +	 qee.x()*qee.x() + add) + 
 	       (eeia2*eeia2*een_s*een_s + 2.*eeia2*een_s*een_i*eea2 + eea2*eea2*een_i*een_i) / 

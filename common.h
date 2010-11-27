@@ -10,6 +10,7 @@
 #define Float float
 #endif
 
+extern const Float kMachineEpsilon;
 
 
 template < typename T >
