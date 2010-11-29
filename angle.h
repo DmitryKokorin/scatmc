@@ -57,11 +57,11 @@ struct Angle
 
 		if (n1 > kMachineEpsilon && n2 > kMachineEpsilon) {
 
-			theta = v1*v2/(n1*n2);
+			costheta = v1*v2/(n1*n2);
+			theta = acos(costheta);
 			sintheta = sin(theta);
-			costheta = cos(theta);
-			sin2theta = sintheta*sintheta;
-			cos2theta = 1 - sin2theta;
+			cos2theta = costheta*costheta;
+			sin2theta = 1 - cos2theta;
 		}
 	}
 

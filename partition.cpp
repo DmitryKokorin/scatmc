@@ -61,6 +61,8 @@ void Partition::refine()
 
 void Partition::refineNode(Node* pNode)
 {
+	//GreedRect& rect = pNode->rect;
+
 	if (pNode->isLeaf()) {
 
 		Float nodeIntegral    = integral(pNode->rect);
@@ -88,6 +90,12 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitY();
 				++rectCount;
 			}
+			/*else {
+				printf("%d %d\n", rect.x1, rect.y1);
+				printf("%d %d\n", rect.x1, rect.y2);
+				printf("%d %d\n", rect.x2, rect.y1);
+				printf("%d %d\n", rect.x2, rect.y2);
+			}*/
 		}
 		else if (pNode->rect.canSplitX()) {
 
@@ -101,6 +109,13 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitX();
 				++rectCount;
 			}
+			/*else {
+				printf("%d %d\n", rect.x1, rect.y1);
+				printf("%d %d\n", rect.x1, rect.y2);
+				printf("%d %d\n", rect.x2, rect.y1);
+				printf("%d %d\n", rect.x2, rect.y2);
+			}*/
+
 
 		}
 		else if (pNode->rect.canSplitY()) {
@@ -115,6 +130,13 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitY();
 				++rectCount;
 			}
+			/*else {
+				printf("%d %d\n", rect.x1, rect.y1);
+				printf("%d %d\n", rect.x1, rect.y2);
+				printf("%d %d\n", rect.x2, rect.y1);
+				printf("%d %d\n", rect.x2, rect.y2);
+			}*/
+
 		}
 	}
 
@@ -167,12 +189,13 @@ void Partition::preparePartitionTree()
 	Float ** data = allocate2dArray<Float>(Partition::size, Partition::size);
 
 	const Float phiStep   = 2*M_PI/Partition::size;
-	const Float thetaStep =   M_PI/Partition::size;
+	const Float thetaStep = M_PI/Partition::size;
 
-	const Float idxIterations = 1000;
-//	const Float idxThetaStep  = M_PI / idxIterations;
+	const Float idxIterations = 100;
 
-
+/*	FILE* f1 = fopen("idx1.txt", "w");
+	FILE* f2 = fopen("idx2.txt", "w");
+*/
 	for (int k = 1; k < idxIterations; ++k) { //don't refine partition for "k_i || n" case
 
 		//angle between k_i and director
@@ -180,36 +203,43 @@ void Partition::preparePartitionTree()
 
 		//here we construct some k_i, that has a_i angle to director
 		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
-//		Vector3 k_i = s_i*Optics::ne(a_i);
 
 		//now we can create coordinate system
 		Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
-		Vector3 v3 = crossProduct(v2, s_i).normalize();
+		Vector3 v3 = crossProduct(s_i, v2).normalize();
 
 		
 		//create matrix
-		Vector3 ox = Vector3(1., 0., 0.);
-		Vector3 oy = Vector3(0., 1., 0.);
-		Vector3 oz = Vector3(0., 0., 1.);
+		Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
 
-		Matrix3 mtx = createTransformMatrix(s_i, v2, v3, ox, oy, oz);
-//		Matrix3 mtx = createTransformMatrix(ox, oy, oz, s_i, v2, v3);
+		Vector3 n_i = mtx*Optics::n;
+		Vector3 k_i = Vector3(1., 0., 0.)*Optics::ne(a_i);
 
-		Vector3 nn = mtx*Optics::n;
-
-		Indicatrix ind = Indicatrix(ox, nn);
+		Indicatrix ind = Indicatrix(k_i, n_i);
 
 		//calculate array values
-		for (int i = 0; i < Partition::size; ++i)
+		for (int i = 0; i < Partition::size; ++i) {
+
+			Float t = i*thetaStep;
+
 			for (int j = 0; j < Partition::size; ++j) {
 
-
-				Float t = i*thetaStep;
 				Float p = j*phiStep;
 
 				Vector3 k_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
-				data[j][i]  = ind(k_s)*sin(t);
+				Float val = ind(k_s)*sin(t);
+				data[j][i]  = val*sin(t);
+
+				/*if (k == 25) {
+					fprintf(f1, "%f %f %f\n", t, p, val);
+				}
+
+				if (k == 50) {
+					fprintf(f2, "%f %f %f\n", t, p, val);
+				}*/
+
 			}
+		}
 
 		setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
 		refine();
@@ -217,6 +247,9 @@ void Partition::preparePartitionTree()
 
 	free2dArray(data);
 
+/*	fclose(f1);
+	fclose(f2);
+*/
 	fprintf(stderr, "Partitioning done, %d rects...\n", rectCount);
 }
 

@@ -14,4 +14,7 @@ Vector3 createSomeDeviantVector(const Vector3& v, const Angle& a); //lol, funny 
 Matrix3 createTransformMatrix(  const Vector3& v1, const Vector3& v2, const Vector3& v3,
 								const Vector3& u1, const Vector3& u2, const Vector3& u3);
 
+///(OX,OY,OZ) to (u1,u2,u3)
+Matrix3 createTransformMatrix( const Vector3& u1, const Vector3& u2, const Vector3& u3);
+
 #endif /* end of include guard: COORDS_CQTZQF5F */

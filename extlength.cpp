@@ -8,7 +8,7 @@
 #include "optics.h"
 #include "indicatrix.h"
 #include "extlength.h"
-
+#include "coords.h"
 
 using namespace Optics;
 
@@ -24,14 +24,28 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 	const Float kPhiStep   = 2. * M_PI / kPhiIterations;
 
 	Float theta_i = 0.;
-	Float phi_i = 0.;
 
+	Vector3 v2, v3;
+	Vector3 nn;
+	Vector3 k_i;
 
-	for (int i = 0; i < kPoints; ++i, theta_i += kResolution) {
+	for (int i = 1; i < kPoints; ++i) {
 
+		theta_i = i*kResolution;
 		Angle   a_i = Angle(theta_i);
-		Vector3 k_i = Vector3(a_i.costheta, a_i.sintheta*sin(phi_i), a_i.sintheta*cos(phi_i))*ne(a_i);
-		Indicatrix ind = Indicatrix(k_i, n);
+		Vector3 s_i = createSomeDeviantVector(n, a_i).normalize();
+
+		//create coordinate system
+		
+		v2 = crossProduct(s_i, Optics::n).normalize();
+		v3 = crossProduct(v2, s_i);
+
+		Matrix3 mtx = invert(createTransformMatrix(s_i, v2, v3));
+		nn = mtx*Optics::n;
+
+		k_i = Vector3(1., 0., 0.)*Optics::ne(a_i);
+		
+		Indicatrix ind = Indicatrix(k_i, nn);
 
 		Float integral = 0.;
 
@@ -48,10 +62,11 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 			
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
 				
-					Vector3 k_s = Vector3(cos(theta_s), sin(theta_s)*sin(phi_s), sin(theta_s)*cos(phi_s))*ne(a_i);
-					Angle a_s   = Angle(k_s, n);
+					Vector3 k_s = Vector3(cos(theta_s), sin(theta_s)*sin(phi_s), sin(theta_s)*cos(phi_s));
+					Angle a_s   = Angle(k_s, nn);
+					k_s *= Optics::ne(a_s);
 
-					t_integral += sin(theta_s) * ind(k_s)*cosde(a_s)/f2(a_s) ;
+					t_integral += sin(theta_s) * ind(k_s)*cosde(a_s)/cosde(a_i)/f2(a_s) ;
 				}
 			}
 
@@ -59,7 +74,9 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 			integral += t_integral;
 		}
 		
-		lengths[i] =/* 1. /*/ (integral*kThetaStep*kPhiStep);
+		lengths[i] = (integral*kThetaStep*kPhiStep);
+
+	//	printf("%f\t%f\n", theta_i, lengths[i]);					
 	}
 
 	lengths[0] = lengths[1];  //dirty fix of NaN
@@ -69,7 +86,7 @@ ExtLength::~ExtLength()
 {
 }
 
-Float ExtLength::operator()(const Angle& a) const//TODO: rewrite
+Float ExtLength::operator()(const Angle& a) const
 {
 	if (a.theta < 0 || a.theta >= M_PI)
 		return 0.;

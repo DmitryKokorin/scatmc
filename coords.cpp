@@ -47,4 +47,24 @@ Matrix3 createTransformMatrix(const Vector3& v1, const Vector3& v2, const Vector
 	return m;
 }
 
+Matrix3 createTransformMatrix(const Vector3& u1, const Vector3& u2, const Vector3& u3)
+{
+	Matrix3 m;
+
+	m(0,0) = u1.x();
+	m(1,0) = u2.x();
+	m(2,0) = u3.x();
+
+	m(0,1) = u1.y();
+	m(1,1) = u2.y();
+	m(2,1) = u3.y();
+
+	m(0,2) = u1.z();
+	m(1,2) = u2.z();
+	m(2,2) = u3.z();
+
+	return m;
+}
+
+
 

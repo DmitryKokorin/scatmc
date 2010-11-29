@@ -57,8 +57,8 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 void ScatMCApp::run()
 {
-	fprintf(stderr, "calculating extinction lengths...\n");
-	ExtLength length;
+//	fprintf(stderr, "calculating extinction lengths...\n");
+//	ExtLength length;
 
 	fprintf(stderr, "preparing partition...\n");
 	Partition p;

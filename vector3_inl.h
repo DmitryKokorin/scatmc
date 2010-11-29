@@ -95,7 +95,11 @@ Vector3& Vector3::normalize()
 {
 	Float n = norm();
 
-	if (0.0 == n) {    //TODO: use some epsilon
+	if (n < kMachineEpsilon) {
+
+		x_ = 1.;
+		y_ = 0.;
+		z_ = 0.;
 
 		return *this;
 	}
@@ -117,7 +121,7 @@ Vector3 crossProduct(const Vector3& lhv, const Vector3& rhv)
 {
 	return Vector3((lhv.y()*rhv.z() - lhv.z()*rhv.y()),
 				  (-lhv.x()*rhv.z() + lhv.z()*rhv.x()),
-				   (lhv.x()*rhv.y() - lhv.x()*rhv.y()));
+				   (lhv.x()*rhv.y() - lhv.y()*rhv.x()));
 }
 
 #endif /* _VECTOR3_INL_H_ */
