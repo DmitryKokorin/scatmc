@@ -77,7 +77,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_loadExtLengths    = true;
-			m_extLengtsFileName = argv[++i];
+			m_extLengtsFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--loadpartition")) {
 
@@ -88,7 +88,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_loadPartition     = true;
-			m_partitionFileName = argv[++i];
+			m_partitionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--savelengths")) {
 
@@ -99,7 +99,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_saveExtLengths    = true;
-			m_partitionFileName = argv[++i];
+			m_extLengtsFileName = argv[i];
 
 		}
 		else if (!strcmp(argv[i], "--savepartition")) {
@@ -111,21 +111,21 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_savePartition     = true;
-			m_partitionFileName = argv[++i];
+			m_partitionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--photons")) {
 
 			if (++i == argc)
 				return false;
 
-			m_maxPhotons = atoi(argv[++i]);
+			m_maxPhotons = atoi(argv[i]);
 		}
 		else if (!strcmp(argv[i], "--scatterings")) {
 
 			if (++i == argc)
 				return false;
 
-			m_maxScatterings = atoi(argv[++i]);
+			m_maxScatterings = atoi(argv[i]);
 		}
 		else 
 			return false;
@@ -145,7 +145,7 @@ int ScatMCApp::run()
 	if (0 != res)
 		return res;
 
-	Partition p;
+/*	Partition p;
 	res = preparePartition(p);
 
 	if (0 != res)
@@ -181,7 +181,7 @@ int ScatMCApp::run()
 		}
 
 	output();
-
+*/
 	return 0;
 }
 

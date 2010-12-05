@@ -58,11 +58,15 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 			
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
 				
-					Vector3 k_s = Vector3(cos(theta_s), sin(theta_s)*sin(phi_s), sin(theta_s)*cos(phi_s));
+					Vector3 k_s = Vector3(  cos(theta_s),
+											sin(theta_s)*sin(phi_s),
+											sin(theta_s)*cos(phi_s));
+
 					Angle a_s   = Angle(k_s, nn);
 					k_s *= Optics::ne(a_s);
 
-					t_integral += sin(theta_s) * ind(k_s)*Optics::cosde(a_s)/Optics::cosde(a_i)/Optics::f2(a_s) ;
+					t_integral += sin(theta_s) * ind(k_s)*
+								Optics::cosde(a_s)/Optics::cosde(a_i)/Optics::f2(a_s) ;
 				}
 			}
 
@@ -98,10 +102,33 @@ bool ExtLength::load(const std::string& name)
 {
 	FILE* file = fopen(name.c_str(), "r");
 
-	if (!file) {
+	if (!file)
+		return false;
 
+	int maxPoints;
+	int res = 0;
+
+	res = fscanf(file, "%d", &maxPoints);
+
+	if (EOF == res || maxPoints != kPoints) {
+
+		fclose(file);
 		return false;
 	}
+
+	Float theta;
+	
+	for (int i = 0; i < kPoints; ++i) {
+
+		res = fscanf(file, "%le\t%le", &theta, &lengths[i]);
+
+		if (EOF == res && i != kPoints) {
+
+			fclose(file);
+			return false;
+		}
+	}
+
 
 	fclose(file);
 	return true;
@@ -111,9 +138,15 @@ bool ExtLength::save(const std::string& name)
 {
 	FILE* file = fopen(name.c_str(), "w");
 
-	if (!file) {
-
+	if (!file)
 		return false;
+
+
+	fprintf(file, "%d\n", kPoints);
+
+	for (int i = 0; i < kPoints; ++i) {
+
+		fprintf(file, "%.17e\t%.17e\n", i*kResolution, lengths[i]);
 	}
 
 	fclose(file);
