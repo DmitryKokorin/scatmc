@@ -2,6 +2,7 @@
 #define _EXTLENGTH_H_
 
 #include <vector>
+#include <string>
 
 #include "common.h"
 
@@ -11,8 +12,12 @@ class Angle;
 class ExtLength 
 {
 public:
-    ExtLength(const int kThetaIterations = 1000, const int kPhiIterations = 1000);
-    virtual ~ExtLength();
+
+    ExtLength() {}
+    bool create(const int kThetaIterations = 1000, const int kPhiIterations = 1000);
+
+    bool load(const std::string& name);
+    bool save(const std::string& name);
 
 	Float operator()(const Angle& d) const;
 

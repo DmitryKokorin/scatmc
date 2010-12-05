@@ -3,23 +3,19 @@
 
 #include <cstdio>
 
-
-//#include "direction.h"
 #include "optics.h"
 #include "indicatrix.h"
 #include "extlength.h"
 #include "coords.h"
 
-using namespace Optics;
 
 const Float ExtLength::kResolution = 0.5 * M_PI / (kPoints-1);
 
 
 
-ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
-                     const int kPhiIterations /*= 1000*/)
+bool ExtLength::create(const int kThetaIterations /*= 1000*/,
+                       const int kPhiIterations /*= 1000*/)
 {
-
    	const Float kThetaStep = M_PI / kThetaIterations;
 	const Float kPhiStep   = 2. * M_PI / kPhiIterations;
 
@@ -33,7 +29,7 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 
 		theta_i = i*kResolution;
 		Angle   a_i = Angle(theta_i);
-		Vector3 s_i = createSomeDeviantVector(n, a_i).normalize();
+		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
 
 		//create coordinate system
 		
@@ -66,7 +62,7 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 					Angle a_s   = Angle(k_s, nn);
 					k_s *= Optics::ne(a_s);
 
-					t_integral += sin(theta_s) * ind(k_s)*cosde(a_s)/cosde(a_i)/f2(a_s) ;
+					t_integral += sin(theta_s) * ind(k_s)*Optics::cosde(a_s)/Optics::cosde(a_i)/Optics::f2(a_s) ;
 				}
 			}
 
@@ -75,15 +71,11 @@ ExtLength::ExtLength(const int kThetaIterations /*= 1000*/,
 		}
 		
 		lengths[i] = (integral*kThetaStep*kPhiStep);
-
-	//	printf("%f\t%f\n", theta_i, lengths[i]);					
 	}
 
-	lengths[0] = lengths[1];  //dirty fix of NaN
-}
+	lengths[0] = lengths[1];
 
-ExtLength::~ExtLength()
-{
+	return true;
 }
 
 Float ExtLength::operator()(const Angle& a) const
@@ -101,3 +93,31 @@ Float ExtLength::operator()(const Angle& a) const
 
 	return lengths[idx]*(1. - mu) + lengths[idx+1] * mu;
 }
+
+bool ExtLength::load(const std::string& name)
+{
+	FILE* file = fopen(name.c_str(), "r");
+
+	if (!file) {
+
+		return false;
+	}
+
+	fclose(file);
+	return true;
+}
+
+bool ExtLength::save(const std::string& name)
+{
+	FILE* file = fopen(name.c_str(), "w");
+
+	if (!file) {
+
+		return false;
+	}
+
+	fclose(file);
+
+	return true;
+}
+

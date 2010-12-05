@@ -2,6 +2,7 @@
 #define _PARTITION_H_
 
 #include <list>
+#include <string>
 
 #include "common.h"
 #include "node.h"
@@ -14,6 +15,10 @@ public:
 
     Partition();
     virtual ~Partition();
+    bool create();
+    
+    bool load(const std::string& name);
+    bool save(const std::string& name);
 
 	void setData(Float** const data_, const Float& cellSquare_);
 	void refine();

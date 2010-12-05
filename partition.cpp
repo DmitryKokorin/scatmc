@@ -25,12 +25,18 @@ Partition::Partition() :
 	cellSquare(0.),
 	fullIntegral(0.)
 {
+}
+
+bool Partition::create()
+{
 	pRoot = new Node(GreedRect(0,0, size-1, size-1));
 	rectCount = 1;
 
 	cellIntegrals = allocate2dArray<Float>(size-1, size-1);
 	
 	preparePartitionTree();
+
+	return true;
 }
 
 Partition::~Partition()
@@ -61,8 +67,6 @@ void Partition::refine()
 
 void Partition::refineNode(Node* pNode)
 {
-	//GreedRect& rect = pNode->rect;
-
 	if (pNode->isLeaf()) {
 
 		Float nodeIntegral    = integral(pNode->rect);
@@ -90,12 +94,6 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitY();
 				++rectCount;
 			}
-			/*else {
-				printf("%d %d\n", rect.x1, rect.y1);
-				printf("%d %d\n", rect.x1, rect.y2);
-				printf("%d %d\n", rect.x2, rect.y1);
-				printf("%d %d\n", rect.x2, rect.y2);
-			}*/
 		}
 		else if (pNode->rect.canSplitX()) {
 
@@ -109,14 +107,6 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitX();
 				++rectCount;
 			}
-			/*else {
-				printf("%d %d\n", rect.x1, rect.y1);
-				printf("%d %d\n", rect.x1, rect.y2);
-				printf("%d %d\n", rect.x2, rect.y1);
-				printf("%d %d\n", rect.x2, rect.y2);
-			}*/
-
-
 		}
 		else if (pNode->rect.canSplitY()) {
 
@@ -130,13 +120,6 @@ void Partition::refineNode(Node* pNode)
 				pNode->splitY();
 				++rectCount;
 			}
-			/*else {
-				printf("%d %d\n", rect.x1, rect.y1);
-				printf("%d %d\n", rect.x1, rect.y2);
-				printf("%d %d\n", rect.x2, rect.y1);
-				printf("%d %d\n", rect.x2, rect.y2);
-			}*/
-
 		}
 	}
 
@@ -188,10 +171,10 @@ void Partition::preparePartitionTree()
 {
 	Float ** data = allocate2dArray<Float>(Partition::size, Partition::size);
 
-	const Float phiStep   = 2*M_PI/Partition::size;
+	const Float phiStep   = M_PI/Partition::size;
 	const Float thetaStep = M_PI/Partition::size;
 
-	const Float idxIterations = 100;
+	const Float idxIterations = 1000;
 
 /*	FILE* f1 = fopen("idx1.txt", "w");
 	FILE* f2 = fopen("idx2.txt", "w");
@@ -241,7 +224,7 @@ void Partition::preparePartitionTree()
 			}
 		}
 
-		setData(data, (M_PI/Partition::size) * (2*M_PI/Partition::size));
+		setData(data, (M_PI/Partition::size) * (M_PI/Partition::size));
 		refine();
 	}
 
@@ -263,5 +246,33 @@ void Partition::processTreeNode(Node* pNode)
 		processTreeNode(pNode->pChild1);
 		processTreeNode(pNode->pChild2);
 	}
+}
+
+bool Partition::load(const std::string& name)
+{
+	FILE* file = fopen(name.c_str(), "r");
+
+	if (!file) {
+
+		return false;
+	}
+
+	fclose(file);
+
+	return true;
+}
+
+bool Partition::save(const std::string& name)
+{
+	FILE* file = fopen(name.c_str(), "w");
+
+	if (!file) {
+
+		return false;
+	}
+
+	fclose(file);
+
+	return true;
 }
 

@@ -4,7 +4,6 @@
 
 #include "common.h"
 
-//#include "direction.h"
 #include "extlength.h"
 #include "photon.h"
 #include "indicatrix.h"
@@ -17,17 +16,36 @@
 int main(int argc, char ** argv)
 {
     ScatMCApp app;
-	if (app.getOpts(argc, argv))
-    	app.run();
+
+    int res = 0;
+
+	if (app.getOpts(argc, argv)) {
+
+    	res = app.run();
+	}
+	else {
+
+		app.printHelp();
+		res = -1;
+	}
     
-	return 0;
+	return res;
 }
 
-const Float ScatMCApp::thetaMax = 1e-5;
+const Float ScatMCApp::kThetaMax = 1e-5;
 
 
 ScatMCApp::ScatMCApp() :
-	seed(1000)
+	m_executableFileName(),
+	m_extLengtsFileName(),
+	m_partitionFileName(),
+	m_loadExtLengths(false),
+	m_saveExtLengths(false),
+	m_loadPartition(false),
+	m_savePartition(false),
+	m_seed(1000),
+	m_maxPhotons(101),
+	m_maxScatterings(1000)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -39,15 +57,77 @@ ScatMCApp::ScatMCApp() :
 
 bool ScatMCApp::getOpts(int argc, char ** argv)
 {
-	switch (argc) {
-		case 1:
-			seed = 1000;
-			break;
-		case 2:
-			seed = atoi(argv[1]);
-			break;
-		default:
-			fprintf(stderr, "Usage: %s [rng seed]\n", argv[0]);
+	m_executableFileName = argv[0];
+
+	for (int i = 1; i < argc; ++i) {
+
+		if (!strcmp(argv[i], "--seed")) {
+
+			if (++i == argc)
+				return false;
+
+			m_seed = atoi(argv[i]);
+		}
+		else if(!strcmp(argv[i], "--loadlengths")) {
+
+			if (m_saveExtLengths)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadExtLengths    = true;
+			m_extLengtsFileName = argv[++i];
+		}
+		else if (!strcmp(argv[i], "--loadpartition")) {
+
+			if (m_savePartition)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadPartition     = true;
+			m_partitionFileName = argv[++i];
+		}
+		else if (!strcmp(argv[i], "--savelengths")) {
+
+			if (m_loadExtLengths)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveExtLengths    = true;
+			m_partitionFileName = argv[++i];
+
+		}
+		else if (!strcmp(argv[i], "--savepartition")) {
+
+			if (m_loadPartition)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_savePartition     = true;
+			m_partitionFileName = argv[++i];
+		}
+		else if (!strcmp(argv[i], "--photons")) {
+
+			if (++i == argc)
+				return false;
+
+			m_maxPhotons = atoi(argv[++i]);
+		}
+		else if (!strcmp(argv[i], "--scatterings")) {
+
+			if (++i == argc)
+				return false;
+
+			m_maxScatterings = atoi(argv[++i]);
+		}
+		else 
 			return false;
 	}
 
@@ -55,27 +135,35 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 }
 
 
-void ScatMCApp::run()
+int ScatMCApp::run()
 {
-//	fprintf(stderr, "calculating extinction lengths...\n");
-//	ExtLength length;
+	int res = 0;
 
-	fprintf(stderr, "preparing partition...\n");
+	ExtLength length;
+	res = prepareExtinctionLengths(length);
+
+	if (0 != res)
+		return res;
+
 	Partition p;
+	res = preparePartition(p);
 
-/*	fprintf(stderr, "scattering...\n");
+	if (0 != res)
+		return res;
+
+	fprintf(stderr, "scattering...\n");
 	Photon::init(&length, &p, getSeed()); 
 
 	int cnt = 0;
 	bool ready = false;
 
 	#pragma omp parallel for
-	for (int i = 0; i < maxPhotons; ++i) 
+	for (int i = 0; i < m_maxPhotons; ++i) 
 		if (!ready) {
 
 			Photon ph;
 		
-			while (ph.pos.z() >= 0 && ph.scatterings < maxScatterings) {
+			while (ph.pos.z() >= 0 && ph.scatterings < m_maxScatterings) {
 
 				ph.move();
 				ph.scatter();
@@ -92,7 +180,9 @@ void ScatMCApp::run()
 			}
 		}
 
-	output();*/
+	output();
+
+	return 0;
 }
 
 
@@ -101,8 +191,8 @@ void ScatMCApp::processScattering(const Photon& ph)
     #pragma omp critical
 	{
 	
-	for (int i = 0; i < thetaSize; ++i)
-		for (int j = 0; j < phiSize; ++j) {
+	for (int i = 0; i < kThetaSize; ++i)
+		for (int j = 0; j < kPhiSize; ++j) {
 
 			Float res = 0;	//FIXME
 
@@ -136,20 +226,20 @@ void ScatMCApp::output()
 	det2file     = fopen("output/peak2.txt", "w");
 	det5file     = fopen("output/peak5.txt", "w");
 	det100file   = fopen("output/peak100.txt", "w");
-	detallfile = fopen("output/peakall.txt", "w");
+	detallfile   = fopen("output/peakall.txt", "w");
 
-	for (int i = 0; i < thetaSize; ++i)
-		for (int j = 0; j < phiSize; ++j) {
+	for (int i = 0; i < kThetaSize; ++i)
+		for (int j = 0; j < kPhiSize; ++j) {
 
-			Float phi   = 2.*M_PI  / phiSize;
-			Float theta = thetaMax / thetaSize;
+			Float phi   = 2.*M_PI  / kPhiSize;
+			Float theta = kThetaMax / kThetaSize;
 
 
 			fprintf(det1file,     "%f\t%f\t%f\n", theta, phi, det1[j][i]);
 			fprintf(det2file,     "%f\t%f\t%f\n", theta, phi, det2[j][i]);
 			fprintf(det5file,     "%f\t%f\t%f\n", theta, phi, det5[j][i]);
 			fprintf(det100file,   "%f\t%f\t%f\n", theta, phi, det100[j][i]);
-			fprintf(detallfile, "%f\t%f\t%f\n", theta, phi, detall[j][i]);
+			fprintf(detallfile,   "%f\t%f\t%f\n", theta, phi, detall[j][i]);
 		}
 
 	fclose(det1file);
@@ -161,7 +251,7 @@ void ScatMCApp::output()
 
 bool ScatMCApp::checkResultsReady()
 {
-	int size = phiSize*thetaSize;
+	int size = kPhiSize*kThetaSize;
 	for (int i = 0; i < size; ++i) {
 
 		Float err =  fabs(((*detall)[i] - (*lastdet)[i]) / (*lastdet)[i]);
@@ -175,4 +265,98 @@ bool ScatMCApp::checkResultsReady()
 	}
 		
 	return true;
+}
+
+void ScatMCApp::printHelp()
+{
+	fprintf(stderr, "Usage: %s [options]", m_executableFileName.c_str());
+	fprintf(stderr, "\n\nAvailable options:");
+	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
+	fprintf(stderr, "\n--loadlengths [filename]\t\tload extinction lengths from file");
+	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
+	fprintf(stderr, "\n--savelengths [filename]\t\tsave extinction lengths to file");
+	fprintf(stderr, "\n--savepartition [filename]\t\tsave partition to file");
+	fprintf(stderr, "\n--photons [photons]\t\t\tnumber of photons to scatter");
+	fprintf(stderr, "\n--scatterings [scatterings]\t\tmax scatterings for each photon");
+	fprintf(stderr, "\n");
+}
+
+int ScatMCApp::prepareExtinctionLengths(ExtLength& l)
+{
+	if (isLoadExtLengths()) {
+
+		fprintf(stderr, "loading extinction lengths...");
+
+		if (!l.load(getExtLengthsFileName())) {
+
+			fprintf(stderr, "can't load extinction lengths\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+		
+		fprintf(stderr, "calculating extinction lengths...\n");
+		l.create();
+	}
+
+	if (isSaveExtLengths()) {
+
+		fprintf(stderr, "saving extinction lengths...");
+
+		if (!l.save(getExtLengthsFileName())) {
+
+			fprintf(stderr, "can't save extinction lengths\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+int ScatMCApp::preparePartition(Partition& p)
+{
+	if (isLoadPartition()) {
+
+		fprintf(stderr, "loading partition...");
+
+		if (!p.load(getPartitionFileName())) {
+
+			fprintf(stderr, "can't load partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+		
+		fprintf(stderr, "creating partition...\n");
+		p.create();
+	}
+
+	if (isSavePartition()) {
+
+		fprintf(stderr, "saving partition...");
+
+		if (!p.save(getPartitionFileName())) {
+
+			fprintf(stderr, "can't save partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
 }
