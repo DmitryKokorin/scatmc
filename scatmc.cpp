@@ -145,13 +145,13 @@ int ScatMCApp::run()
 	if (0 != res)
 		return res;
 
-/*	Partition p;
+	Partition p;
 	res = preparePartition(p);
 
 	if (0 != res)
 		return res;
 
-	fprintf(stderr, "scattering...\n");
+/*	fprintf(stderr, "scattering...\n");
 	Photon::init(&length, &p, getSeed()); 
 
 	int cnt = 0;

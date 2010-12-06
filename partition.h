@@ -2,12 +2,16 @@
 #define _PARTITION_H_
 
 #include <list>
+#include <vector>
 #include <string>
+#include <map>
 
 #include "common.h"
 #include "node.h"
 #include "rect.h"
 
+typedef std::list<Rect>   RectsList;
+typedef std::vector<Knot> KnotsVector;
 
 class Partition
 {
@@ -20,16 +24,22 @@ public:
     bool load(const std::string& name);
     bool save(const std::string& name);
 
-	void setData(Float** const data_, const Float& cellSquare_);
+	void setData(Float** const data, const Float& cellSquare);
 	void refine();
 
-	static const Float epsilon;
-	static const int   degree = 10;           
-	static const int   size   = (1 << degree) + 1;    //1025x1025
-	
-	static int rectCount;
+	static const Float kEpsilon;
+	static const int   kDegree = 10;           
+	static const int   kSize   = (1 << kDegree) + 1;    //1025x1025
 
-	std::list<Rect> rects;
+	static const Float kXResolution;
+	static const Float kYResolution;
+
+	static const int kIterations = 1000;
+	
+	int m_rectCount;
+
+	RectsList   m_rects;
+	KnotsVector m_knots;
 
 
 private:
@@ -37,18 +47,24 @@ private:
 	Float integral(const GreedRect& rect);
 	Float approxIntegral(const GreedRect& rect);
 
-	void preparePartitionTree();
+	void createPartitionTree();
+	void createRectsList();
 	
-	void processTreeNode(Node* pNode);
+	
+	Node*    m_root;
+	Float**  m_data;             //knots
+	Float**  m_cellIntegrals;    //integrals of elementary cells
 
-	Node* pRoot;
-	Float**  data;             //knots
-	Float**  cellIntegrals;    //integrals of elementary cells
+	std::map<int, int> m_knotsMap;
 
-	void refineNode(Node* pNode);
+	//used on tree creation
+	void refineNode(Node* node);
 
-	Float cellSquare;
-	Float fullIntegral;
+	//used on list creation
+	void processTreeNode(Node* node);
+
+	Float m_cellSquare;
+	Float m_fullIntegral;
 
 	//disable copying
 	Partition(const Partition&);
