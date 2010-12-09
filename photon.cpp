@@ -2,7 +2,9 @@
 
 #include "extlength.h"
 #include "indicatrix.h"
+#include "partition.h"
 #include "optics.h"
+#include "coords.h"
 #include "photon.h"
 
 
@@ -63,13 +65,60 @@ void Photon::move()
 
 void Photon::scatter()
 {
+	//coordinate system
+	Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
+	Vector3 v3 = crossProduct(s_i, v2).normalize();
+	Vector3 v1 = Vector3(1., 0., 0.);
+
+	Matrix3 mtx = createTransformMatrix(v1, v2, v3);
+
+	Vector3 nn = mtx*Optics::n;
+
+	Angle a_i = Angle(v1, nn);
+	Vector3 k_i = Optics::ke(v1, a_i);
+
+	Indicatrix ind = Indicatrix(k_i, nn);
+
+	//compute integrals
+	{
+		KnotsVector& knots = partition.m_knots;
+		KnotsVector::iterator i;	
+		for (i = knots.begin(); i != knots.end(); ++i) {
+
+			Float   sintheta = sin(i->x);
+			Vector3 k_s      = Vector3(  cos(i->x),
+									     sintheta*sin(i->y),
+									     sintheta*cos(i->y));
+	
+			i->val = sintheta*ind(k_s);
+		}
+	}
+
+	{
+		RectsList& rects = partition.m_rects;
+		RectsList::iterator i;
+
+		Float fullIntegral = 0.;
+		for (i = rects.begin(); i != rects.end(); ++i) {
+
+			fullIntegral += i->integral();
+			i->val = fullIntegral;
+		}
+	}
+	
+
+}
+
+/*
+void Photon::scatter()
+{
 	//prepare probs array
 
 	Angle   a_i = Angle(s_i, Optics::n);
 	Vector3 k_i = Optics::ke(s_i, a_i);
 	Indicatrix ind = Indicatrix(k_i, Optics::n);
 
-/*	Float sum   = 0.;
+	Float sum   = 0.;
 	int   index = 0;
  
 	for (int i = 0; i < kThetaIterations; ++i) {
@@ -105,7 +154,7 @@ void Photon::scatter()
 	Float phi   = (Float)(index % kPhiIterations)*kPhiStep;
 	
 	d_i = Direction(theta, phi);
-*/
 
 	scatterings++;
 }
+*/

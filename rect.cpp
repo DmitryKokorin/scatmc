@@ -10,7 +10,8 @@ Rect::Rect(const int tl_,
 	tr(tr_),
 	bl(bl_),
 	br(br_),
-	x1(0), x2(0), y1(0), y2(0), width(0), height(0), square(0)
+	x1(0), x2(0), y1(0), y2(0), width(0), height(0), square(0),
+	val(0)
 {
 	std::vector<Knot>& knots = *s_knots;
 	x1 = knots[tl].x;
@@ -24,11 +25,4 @@ Rect::Rect(const int tl_,
 	square = width*height;
 }
 
-Float Rect::integral()
-{
-	return 0.25*square*((*s_knots)[tl].val +
-						(*s_knots)[tr].val +
-						(*s_knots)[bl].val +
-						(*s_knots)[br].val);
-}
 

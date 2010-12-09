@@ -38,10 +38,21 @@ struct Rect
 			
 	Float	square;
 
+	Float   val;
+
 	
 	inline 	Float	integral();
 
 	static std::vector<Knot>	*s_knots;
 };
+
+inline Float Rect::integral()
+{
+	return 0.25*square*((*s_knots)[tl].val +
+						(*s_knots)[tr].val +
+						(*s_knots)[bl].val +
+						(*s_knots)[br].val);
+}
+
 
 #endif /* _RECT_H_ */
