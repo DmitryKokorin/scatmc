@@ -74,7 +74,7 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 			integral += t_integral;
 		}
 		
-		lengths[i] = (integral*kThetaStep*kPhiStep);
+		lengths[i] = 1./(integral*kThetaStep*kPhiStep);
 	}
 
 	lengths[0] = lengths[1];

@@ -1,7 +1,6 @@
 #ifndef _PARTITION_H_
 #define _PARTITION_H_
 
-#include <list>
 #include <vector>
 #include <string>
 #include <map>
@@ -10,7 +9,7 @@
 #include "node.h"
 #include "rect.h"
 
-typedef std::list<Rect>   RectsList;
+typedef std::vector<Rect> RectsVector;
 typedef std::vector<Knot> KnotsVector;
 
 class Partition
@@ -38,7 +37,7 @@ public:
 	
 	int m_rectCount;
 
-	RectsList   m_rects;
+	RectsVector m_rects;
 	KnotsVector m_knots;
 
 

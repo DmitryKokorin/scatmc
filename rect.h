@@ -43,6 +43,8 @@ struct Rect
 	
 	inline 	Float	integral();
 
+	void choosePointInRect(Float& x, Float& y, const Float randX, const Float randY);
+
 	static std::vector<Knot>	*s_knots;
 };
 

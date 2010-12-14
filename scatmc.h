@@ -15,6 +15,7 @@ public:
 	bool getOpts(int argc, char ** argv);
 	void printHelp();
 
+	
 private:
 
 	int  getSeed() { return m_seed; }
@@ -34,6 +35,8 @@ private:
 	void processScattering(const Photon& ph);
 	void output();
 	bool checkResultsReady();
+
+	ExtLength m_length;
 
 	std::string m_executableFileName;
 	std::string m_extLengtsFileName;

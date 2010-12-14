@@ -284,6 +284,33 @@ bool Partition::load(const std::string& name)
 	if (!file)
 		return false;
 
+	int res = 0;
+
+	int knotsNumber;
+	res = fscanf(file, "%d", &knotsNumber);
+
+	for (int i = 0; i < knotsNumber; ++i) {
+
+		Float x, y;
+		res = fscanf(file, "%le\t%le", &x, &y);
+		m_knots.push_back(Knot(x, y, 0.));
+	}
+
+
+	Rect::s_knots = &m_knots;
+
+	unsigned long int rectsNumber;
+
+	res = fscanf(file, "%lu", &rectsNumber);
+
+	for (unsigned long int i = 0; i < rectsNumber; ++i) {
+
+		int tl, tr, bl, br;
+		res = fscanf(file, "%d\t%d\t%d\t%d", &tl, &tr, &bl, &br);
+		m_rects.push_back(Rect(tl, tr, bl, br));
+	}
+
+
 	fclose(file);
 
 	return true;
@@ -310,7 +337,7 @@ bool Partition::save(const std::string& name)
 	
 	//rects
 	{
-		RectsList::iterator i;
+		RectsVector::iterator i;
 
 		fprintf(file, "%lu\n", m_rects.size());
 

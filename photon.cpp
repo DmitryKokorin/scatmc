@@ -65,12 +65,14 @@ void Photon::move()
 
 void Photon::scatter()
 {
+	//TODO: scattering along the director (use formula of ordinary beam)
+	
 	//coordinate system
 	Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
 	Vector3 v3 = crossProduct(s_i, v2).normalize();
 	Vector3 v1 = Vector3(1., 0., 0.);
 
-	Matrix3 mtx = createTransformMatrix(v1, v2, v3);
+	Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
 
 	Vector3 nn = mtx*Optics::n;
 
@@ -94,67 +96,84 @@ void Photon::scatter()
 		}
 	}
 
-	{
-		RectsList& rects = partition.m_rects;
-		RectsList::iterator i;
+	RectsVector& rects = partition.m_rects;
+	Float fullIntegral = 0.;
 
-		Float fullIntegral = 0.;
+	{
+		RectsVector::iterator i;
+
 		for (i = rects.begin(); i != rects.end(); ++i) {
 
 			fullIntegral += i->integral();
 			i->val = fullIntegral;
 		}
 	}
-	
 
-}
+	//random value to choose rect
+	std::tr1::uniform_real<Float> probs_dist(0, fullIntegral);
+	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
+	std::tr1::uniform_real<Float> dist01(0, 1);
+	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng01(rng_core, dist01);
 
-/*
-void Photon::scatter()
-{
-	//prepare probs array
 
-	Angle   a_i = Angle(s_i, Optics::n);
-	Vector3 k_i = Optics::ke(s_i, a_i);
-	Indicatrix ind = Indicatrix(k_i, Optics::n);
+	Float randRect;
+	Float randX;
+	Float randY;
+	Float randPhi;
 
-	Float sum   = 0.;
-	int   index = 0;
- 
-	for (int i = 0; i < kThetaIterations; ++i) {
-			
-		Float theta_s = i*kThetaStep;
-		Float phi_s = 0.;
-
-		Direction d = Direction(theta_s, phi_s);
-
-		for (int j = 0; j < kPhiIterations; ++j, phi_s += kPhiStep) {
-				
-			d.phi    = phi_s;
-			d.sinphi = sin(phi_s);
-			d.cosphi = cos(phi_s);
-
-			sum += d.sintheta * ind(d) * kPhiStep*kThetaStep;
-			probs[index++] = sum;
-		}
+	#pragma omp critical
+	{
+		randRect = rng_direction();
+		randX = rng01();
+		randY = rng01();
+		randPhi = rng01();
 	}
 
-	//FIXME: use precreated partition
-	//choose scattering direction
-	std::tr1::uniform_real<Float> probs_dist(0, sum);
-	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
 
-	Float rnd = rng_direction();
-	
-	index = 0;
-	while (probs[index] < rnd)
-		index++;
+	//binary search
+	int rectIdx = 0;
+	//int first = 0;
+	//int last = rects.size() - 1;
 
-	Float theta = (Float)(index / kPhiIterations)*kThetaStep;
-	Float phi   = (Float)(index % kPhiIterations)*kPhiStep;
-	
-	d_i = Direction(theta, phi);
+
+/*	while (first <= last) {
+
+    	int mid = (first + last) / 2;
+       	if (randRect > rects[mid].val) {
+
+        	first = mid + 1;
+	   	}
+       	else if (randRect < rects[mid].val) {
+
+        	last = mid - 1; 
+	   	}
+       	else {
+
+        	rectIdx = mid;     
+           	break;
+	   	}
+    }
+*/
+	while (randRect > rects[rectIdx].val) {
+
+		rectIdx++;
+	}
+
+
+	Float phi_s, theta_s;
+	rects[rectIdx].choosePointInRect(theta_s, phi_s, randX, randY);
+
+	if (randPhi > 0.5)   //choose one of symmetrical cases
+		phi_s = 2*M_PI - phi_s;
+
+	Float sintheta = sin(theta_s);
+	Vector3 s_s =  Vector3(  cos(theta_s),
+						     sintheta*sin(phi_s),
+						     sintheta*cos(phi_s));
+
+	mtx = invert(mtx);
+
+	s_i = invert(mtx)*s_s;
 
 	scatterings++;
 }
-*/
