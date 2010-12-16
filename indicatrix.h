@@ -9,14 +9,15 @@ class Indicatrix
 {
 public:
 
-    Indicatrix(const Vector3& k_i, const Vector3& n_i);
+    Indicatrix(const Vector3& s_i, const Vector3& n_i);
     virtual ~Indicatrix();
 
-	Float operator()(const Vector3& k_s);
+	Float operator()(const Vector3& s_s);
 
 
 private:
 	
+	Vector3   s_i;
 	Vector3   k_i;
 	Vector3   n_i; //director in k_i based coordinate system
 	Angle     a_i; //angle between k_i and n vectors 

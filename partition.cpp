@@ -49,7 +49,7 @@ bool Partition::create()
 Partition::~Partition()
 {
 	delete m_root;
-	free2dArray<Float>(m_cellIntegrals);
+//	free2dArray(m_cellIntegrals);
 }
 
 void Partition::setData(Float** const data, const Float& cellSquare)
@@ -91,7 +91,7 @@ void Partition::refineNode(Node* node)
 			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
 
 
-			if ((xSplitError > rectMaxError) && (xSplitError > ySplitError)) {
+			if ((xSplitError > rectMaxError) && (xSplitError >= ySplitError)) {
 
 				node->splitX();
 				++m_rectCount;
@@ -211,8 +211,8 @@ void Partition::createPartitionTree()
 
 				Float p = j*phiStep;
 
-				Vector3 k_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
-				Float val = ind(k_s)*sin(t);
+				Vector3 s_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
+				Float val = ind(s_s)*sin(t);
 				data[j][i]  = val*sin(t);
 			}
 		}

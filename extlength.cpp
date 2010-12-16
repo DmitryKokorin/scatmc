@@ -58,14 +58,13 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 			
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
 				
-					Vector3 k_s = Vector3(  cos(theta_s),
+					Vector3 s_s = Vector3(  cos(theta_s),
 											sin(theta_s)*sin(phi_s),
 											sin(theta_s)*cos(phi_s));
 
-					Angle a_s   = Angle(k_s, nn);
-					k_s *= Optics::ne(a_s);
+					Angle a_s   = Angle(s_s, nn);
 
-					t_integral += sin(theta_s) * ind(k_s)*
+					t_integral += sin(theta_s) * ind(s_s)*
 								Optics::cosde(a_s)/Optics::cosde(a_i)/Optics::f2(a_s) ;
 				}
 			}

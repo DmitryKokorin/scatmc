@@ -26,7 +26,7 @@ Rect::Rect(const int tl_,
 	square = width*height;
 }
 
-void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float randY)
+void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float /*randY*/)
 {
 	std::vector<Knot>& knots = *s_knots;
 
@@ -54,13 +54,13 @@ void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float 
 			else if (x2 >= 0. && x2 < 1.)
 				x = x2;
 			else
-				fprintf(stderr, "out of range\n");
+				fprintf(stderr, "x out of range, %f\t%f\n", x1, x2);
 		}
 	}
 
 	{
 		Float y1, y2;
-		roots = solveQuadric(b3 + b4*x, 0.5*(b1 + b2*x), -randY*(b1+b2*x + 0.5*(b3+b4*x)), y1, y2);
+		roots = solveQuadric(b3 + b4*x, 0.5*(b1 + b2*x), /*-randY*(b1+b2*x + 0.5*(b3+b4*x)*/0., y1, y2);
 
 		if (roots == 1)
 			y = y1;
@@ -71,7 +71,7 @@ void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float 
 			else if (y2 >= 0. && y2 < 1.)
 				y = y2;
 			else
-				fprintf(stderr, "out of range\n");
+				fprintf(stderr, "y out of range, %f\t%f\n", y1, y2);
 		}
 	}
 

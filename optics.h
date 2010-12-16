@@ -65,28 +65,28 @@ inline Float f2(const Angle& a)
 
 inline Vector3 ke(const Vector3& direction, const Angle& a)
 {
-	Float n = ne(a);
-	return Vector3(direction).normalize()*n;
+	Float nn = ne(a);
+	return Vector3(direction).normalize()*nn;
 }
 
-inline Vector3 ke(const Vector3& direction, const Vector3& n)
+inline Vector3 ke(const Vector3& direction, const Vector3& nn)
 {
-	return ke(direction, Angle(direction, n));
+	return ke(direction, Angle(direction, nn));
 }
 
 //s is a unit vector, s = k/|k|
-inline Vector3 ee(const Vector3& k, const Vector3& n, const Angle& a)
+inline Vector3 ee(const Vector3& k, const Vector3& nn, const Angle& a)
 {
 	if (fabs(a.sintheta) > kMachineEpsilon) {
 
 		Vector3 s = Vector3(k).normalize();
 //		Float iNo = 1./ (a.sintheta*sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta));
 //		return (s*eps_par*a.costheta - n*(eps_par*a.cos2theta + eps_perp*a.sin2theta)) * iNo; 
-		return (s*eps_par*a.costheta - n*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
+		return (s*eps_par*a.costheta - nn*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
 	}
 	else { //along the optical axis, so we use the expression for the ordinary beam polarization
 
-		return crossProduct(k, n).normalize();
+		return crossProduct(k, nn).normalize();
 	}
 }
 

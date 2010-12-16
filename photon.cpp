@@ -40,10 +40,11 @@ void Photon::init(	ExtLength* length_,
 
 Photon::Photon() :
 	pos(0.,0.,0.),
-	s_i(0., 0., 1),
+	s_i(0., 0., 1.),
 	a_i(Angle(s_i, Optics::n)),
 	scatterings(0),
 	weight(1.),
+	fullIntegral(0.),
 	length(*s_length),
 	partition(*s_partition)
 {
@@ -65,10 +66,18 @@ void Photon::move()
 
 void Photon::scatter()
 {
-	//TODO: scattering along the director (use formula of ordinary beam)
-	
 	//coordinate system
-	Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
+	Vector3 v2;
+
+	if (Angle(s_i, Optics::n).sintheta > kMachineEpsilon) {
+
+		v2 = crossProduct(s_i, Optics::n).normalize();
+	}
+	else {
+
+		v2 = createSomePerpendicular(s_i).normalize();
+	}
+
 	Vector3 v3 = crossProduct(s_i, v2).normalize();
 	Vector3 v1 = Vector3(1., 0., 0.);
 
@@ -79,7 +88,7 @@ void Photon::scatter()
 	Angle a_i = Angle(v1, nn);
 	Vector3 k_i = Optics::ke(v1, a_i);
 
-	Indicatrix ind = Indicatrix(k_i, nn);
+	Indicatrix ind = Indicatrix(v1, nn);
 
 	//compute integrals
 	{
@@ -88,16 +97,18 @@ void Photon::scatter()
 		for (i = knots.begin(); i != knots.end(); ++i) {
 
 			Float   sintheta = sin(i->x);
-			Vector3 k_s      = Vector3(  cos(i->x),
+			Vector3 s_s      = Vector3(  cos(i->x),
 									     sintheta*sin(i->y),
 									     sintheta*cos(i->y));
 	
-			i->val = sintheta*ind(k_s);
+			i->val = sintheta*ind(s_s);
+
+		//	if (scatterings == 2)
+		//	printf("%.17e\t%.17e\t%.17e\n", i->x, i->y, i->val);
 		}
 	}
 
 	RectsVector& rects = partition.m_rects;
-	Float fullIntegral = 0.;
 
 	{
 		RectsVector::iterator i;
@@ -110,10 +121,10 @@ void Photon::scatter()
 	}
 
 	//random value to choose rect
-	std::tr1::uniform_real<Float> probs_dist(0, fullIntegral);
-	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
-	std::tr1::uniform_real<Float> dist01(0, 1);
-	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng01(rng_core, dist01);
+//	std::tr1::uniform_real<Float> probs_dist(0, fullIntegral);
+//	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
+//	std::tr1::uniform_real<Float> dist01(0, 1);
+//	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng01(rng_core, dist01);
 
 
 	Float randRect;
@@ -123,10 +134,14 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-		randRect = rng_direction();
-		randX = rng01();
-		randY = rng01();
-		randPhi = rng01();
+//		randRect = rng_direction();
+//		randX = rng01();
+//		randY = rng01();
+//		randPhi = rng01();
+		randRect = rng()*fullIntegral;
+		randX = rng();
+		randY = rng();
+		randPhi = rng();
 	}
 
 
@@ -161,7 +176,9 @@ void Photon::scatter()
 
 
 	Float phi_s, theta_s;
+	//fprintf(stderr, "x=%f\ty=%f\tw=%f\th=%f\n", (*Rect::s_knots)[rects[rectIdx].tl].x, (*Rect::s_knots)[rects[rectIdx].tl].y, rects[rectIdx].width, rects[rectIdx].height);
 	rects[rectIdx].choosePointInRect(theta_s, phi_s, randX, randY);
+	//fprintf(stderr, "%f\t%f\n", phi_s, theta_s);
 
 	if (randPhi > 0.5)   //choose one of symmetrical cases
 		phi_s = 2*M_PI - phi_s;
