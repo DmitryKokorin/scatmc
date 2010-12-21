@@ -9,6 +9,8 @@
 class ExtLength;
 class Partition;
 
+typedef std::vector<Float> ValuesVector;
+
 
 class Photon
 
@@ -32,6 +34,9 @@ public:
 
 protected:
 
+	void choosePointInRect(Float& x, Float& y, const int rectIdx, const Float randX, const Float randY);
+
+
 	static std::tr1::mt19937 rng_core;  
 	static std::tr1::uniform_real<Float> dist; 
 
@@ -45,6 +50,9 @@ protected:
 
 	static Partition* s_partition;  
 	Partition& partition;   
+
+	ValuesVector    m_knotValues;
+	ValuesVector    m_rectValues;
 
 
 	static const int kThetaIterations = 1000;

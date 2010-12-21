@@ -250,10 +250,10 @@ void Partition::processTreeNode(Node* node)
 		Float y1 = node->rect.y1 * kYResolution;
 		Float y2 = node->rect.y2 * kYResolution;
 
-		knots[0] = Knot(x1, y1, 0.);
-		knots[1] = Knot(x2, y1, 0.);
-		knots[2] = Knot(x1, y2, 0.);
-		knots[3] = Knot(x2, y2, 0.);
+		knots[0] = Knot(x1, y1);
+		knots[1] = Knot(x2, y1);
+		knots[2] = Knot(x1, y2);
+		knots[3] = Knot(x2, y2);
 
 		for (int i = 0; i < 4; ++i) {
 
@@ -293,7 +293,7 @@ bool Partition::load(const std::string& name)
 
 		Float x, y;
 		res = fscanf(file, "%le\t%le", &x, &y);
-		m_knots.push_back(Knot(x, y, 0.));
+		m_knots.push_back(Knot(x, y));
 	}
 
 

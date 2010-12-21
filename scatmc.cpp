@@ -47,7 +47,7 @@ ScatMCApp::ScatMCApp() :
 	m_savePartition(false),
 	m_seed(1000),
 	m_maxPhotons(100),
-	m_maxScatterings(10)
+	m_maxScatterings(1000)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));

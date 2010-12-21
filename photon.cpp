@@ -43,8 +43,12 @@ Photon::Photon() :
 	weight(1.),
 	fullIntegral(0.),
 	length(*s_length),
-	partition(*s_partition)
+	partition(*s_partition),
+	m_knotValues(),
+	m_rectValues()
 {
+	m_knotValues.reserve(s_partition->m_knots.size());
+	m_rectValues.reserve(s_partition->m_rects.size());
 }
 
 
@@ -91,29 +95,43 @@ void Photon::scatter()
 	//compute integrals
 	{
 		KnotsVector& knots = partition.m_knots;
-		KnotsVector::iterator i;	
-		for (i = knots.begin(); i != knots.end(); ++i) {
+		KnotsVector::iterator k;
 
-			Float   sintheta = sin(i->x);
-			Vector3 s_s      = Vector3(  cos(i->x),
-									     sintheta*sin(i->y),
-									     sintheta*cos(i->y));
+		m_knotValues.clear();
+
+		for (k = knots.begin(); k != knots.end(); ++k) {
+
+			Float   sintheta = sin(k->x);
+			Vector3 s_s      = Vector3(  cos(k->x),
+									     sintheta*sin(k->y),
+									     sintheta*cos(k->y));
 	
-			i->val = sintheta*ind(s_s);
+			m_knotValues.push_back(sintheta*ind(s_s));
 		}
 	}
 
+	
 	RectsVector& rects = partition.m_rects;
 
 	{
 		RectsVector::iterator i;
 
+		m_rectValues.clear();
+
 		for (i = rects.begin(); i != rects.end(); ++i) {
 
-			fullIntegral += i->integral();
-			i->val = fullIntegral;
+			Float rectIntegral = 0.25* (m_knotValues[(*i).tl] +
+										m_knotValues[(*i).tr] +
+										m_knotValues[(*i).bl] +
+										m_knotValues[(*i).br]) * 
+								(*i).square;
+
+			fullIntegral += rectIntegral;
+			m_rectValues.push_back(fullIntegral);
 		}
 	}
+
+
 
 	//random value to choose rect
 
@@ -155,41 +173,80 @@ void Photon::scatter()
 	   	}
     }
 */
-	while (randRect > rects[rectIdx].val) {
+	while (randRect > m_rectValues[rectIdx]) {
 
 		rectIdx++;
 	}
 
 
-	Float phi_s, theta_s;
-	//fprintf(stderr, "x=%f\ty=%f\tw=%f\th=%f\n", (*Rect::s_knots)[rects[rectIdx].tl].x, (*Rect::s_knots)[rects[rectIdx].tl].y, rects[rectIdx].width, rects[rectIdx].height);
-	rects[rectIdx].choosePointInRect(theta_s, phi_s, randX, randY);
-	//fprintf(stderr, "%f\t%f\n", phi_s, theta_s);
+	Float p, t;
+	choosePointInRect(t, p, rectIdx, randX, randY);
 
 	if (randPhi > 0.5)   //choose one of symmetrical cases
-		phi_s = 2*M_PI - phi_s;
+		p = 2*M_PI - p;
 
-	Float sintheta = sin(theta_s);
-	Vector3 s_s =  Vector3(  cos(theta_s),
-						     sintheta*sin(phi_s),
-						     sintheta*cos(phi_s));
-	//fprintf(stderr, "%f\t%f\n", sintheta, phi_s, cos(phi_s));
+	Float sintheta = sin(t);
+	Vector3 s_s =  Vector3(  cos(t),
+						     sintheta*sin(p),
+						     sintheta*cos(p));
 
-	//mtx = invert(mtx);
 
 	s_i = invert(mtx)*s_s;
 
-	/*Matrix3 testMtx = invert(mtx);
-	testMtx = mtx*testMtx;
-	for (int i = 0; i < 3; ++i)
-		for (int j = 0; j < 3; ++j)
-			fprintf(stderr, "%f\t", testMtx(i,j));
-
-	fprintf(stderr, "\n");
-
-	fprintf(stderr, "%f\t%f\t%f\n", s_s.x(), s_s.y(), s_s.z());
-	fprintf(stderr, "%f\t%f\t%f\n", s_i.x(), s_i.y(), s_i.z());
-*/
-
 	scatterings++;
 }
+
+void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Float randX, const Float randY)
+{
+
+	Rect& rect = partition.m_rects[rectNum];
+
+
+	Float b1 = m_knotValues[rect.tl];
+	Float b2 = m_knotValues[rect.tr] - b1;
+	Float b3 = m_knotValues[rect.bl] - b1;
+	Float b4 = b1 - m_knotValues[rect.tr] - m_knotValues[rect.bl] + m_knotValues[rect.br];
+
+	int roots;
+
+	{
+		Float x1, x2;
+		roots = solveQuadric(b2 + 0.5*b4, 0.5*(b1 + 0.5*b3), -randX*(b2+0.5*b4+0.5*b1+0.25*b3), x1, x2);
+
+		if (roots == 1)
+			x = x1;
+		else if (roots == 2) {
+
+			if (x1 >= 0. && x1 < 1.)
+				x = x1;
+			else if (x2 >= 0. && x2 < 1.)
+				x = x2;
+			else
+				fprintf(stderr, "x out of range, %f\t%f\n", x1, x2);
+		}
+	}
+
+	{
+		Float y1, y2;
+		roots = solveQuadric(0.5*(b3 + b4*x), b1 + b2*x, -randY*(b1+b2*x + 0.5*(b3+b4*x)), y1, y2);
+
+		if (roots == 1)
+			y = y1;
+		else if (roots == 2) {
+
+			if (y1 >= 0. && y1 < 1.)
+				y = y1;
+			else if (y2 >= 0. && y2 < 1.)
+				y = y2;
+			else
+				fprintf(stderr, "y out of range, %f\t%f\n", y1, y2);
+		}
+	}
+
+	x *= rect.width;
+	y *= rect.height;
+
+	x += partition.m_knots[rect.tl].x;
+	y += partition.m_knots[rect.tl].y;
+}
+
