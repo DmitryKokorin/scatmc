@@ -1,11 +1,8 @@
 #ifndef _PHOTON_H_
 #define _PHOTON_H_
 
-
 #include <tr1/random>
 
-
-//#include "direction.h"
 #include "vector3.h"
 #include "angle.h"
 
@@ -52,8 +49,6 @@ protected:
 
 	static const int kThetaIterations = 1000;
 	static const int kPhiIterations   = 1000;
-	static const Float kThetaStep;
-	static const Float kPhiStep;
 	
 	static Float probs[kThetaIterations*kPhiIterations];
 };

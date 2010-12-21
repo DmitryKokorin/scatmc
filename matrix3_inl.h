@@ -29,15 +29,30 @@ inline Matrix3 invert(const Matrix3& mtx)
 
 	Matrix3 res;
 
-	res(0,0) =  (mtx.data[1][1]*mtx.data[2][2]-mtx.data[2][1]*mtx.data[1][2])*id;
-	res(1,0) = -(mtx.data[0][1]*mtx.data[2][2]-mtx.data[0][2]*mtx.data[2][1])*id;
-	res(2,0) =  (mtx.data[0][1]*mtx.data[1][2]-mtx.data[0][2]*mtx.data[1][1])*id;
-	res(0,1) = -(mtx.data[1][0]*mtx.data[2][2]-mtx.data[1][2]*mtx.data[2][0])*id;
-	res(1,1) =  (mtx.data[0][0]*mtx.data[2][2]-mtx.data[0][2]*mtx.data[2][0])*id;
-	res(2,1) = -(mtx.data[0][0]*mtx.data[1][2]-mtx.data[1][0]*mtx.data[0][2])*id;
-	res(0,2) =  (mtx.data[1][0]*mtx.data[2][1]-mtx.data[2][0]*mtx.data[1][1])*id;
-	res(1,2) = -(mtx.data[0][0]*mtx.data[2][1]-mtx.data[2][0]*mtx.data[0][1])*id;
-	res(2,2) =  (mtx.data[0][0]*mtx.data[1][1]-mtx.data[1][0]*mtx.data[0][1])*id;
+	res(0,0) =  (mtx.data[2][2]*mtx.data[1][1] - mtx.data[2][1]*mtx.data[1][2])*id;
+	res(0,1) = -(mtx.data[2][2]*mtx.data[0][1] - mtx.data[2][1]*mtx.data[0][2])*id;
+	res(0,2) =  (mtx.data[1][2]*mtx.data[0][1] - mtx.data[1][1]*mtx.data[0][2])*id;
+
+	res(1,0) = -(mtx.data[2][2]*mtx.data[1][0] - mtx.data[2][0]*mtx.data[1][2])*id;
+	res(1,1) =  (mtx.data[2][2]*mtx.data[0][0] - mtx.data[2][0]*mtx.data[0][2])*id;
+	res(1,2) = -(mtx.data[1][2]*mtx.data[0][0] - mtx.data[1][0]*mtx.data[0][2])*id;
+
+	res(2,0) =  (mtx.data[2][1]*mtx.data[1][0] - mtx.data[2][0]*mtx.data[1][1])*id;
+	res(2,1) = -(mtx.data[2][1]*mtx.data[0][0] - mtx.data[2][0]*mtx.data[0][1])*id;
+	res(2,2) =  (mtx.data[1][1]*mtx.data[0][0] - mtx.data[1][0]*mtx.data[0][1])*id;
+
+
+	return res;
+}
+
+inline Matrix3 Matrix3::operator*(Matrix3& rhv) const
+{
+	Matrix3 res;
+
+	for (int j = 0; j < 3; ++j)
+		for (int i = 0; i < 3; ++i)
+			for (int k = 0; k < 3; ++k)
+				res(j,i) += data[j][k]* rhv(k,i);
 
 	return res;
 }

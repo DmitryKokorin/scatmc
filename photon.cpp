@@ -8,9 +8,6 @@
 #include "photon.h"
 
 
-const Float Photon::kThetaStep = M_PI / kThetaIterations;
-const Float Photon::kPhiStep   = 2. * M_PI / kPhiIterations;
-
 Float Photon::probs[kThetaIterations*kPhiIterations] = {0};
 ExtLength* Photon::s_length       = NULL;
 Partition* Photon::s_partition    = NULL;
@@ -60,6 +57,7 @@ void Photon::move()
 	}
 
 	Float d   = -log(rnd) * length(Angle(s_i, Optics::n));
+	//fprintf(stderr, "d_pos: %.17f\t%.17f\t%.17f\n", d*s_i.x(), d*s_i.y(), d*s_i.z());
 
 	pos += d*s_i;
 }
@@ -69,7 +67,7 @@ void Photon::scatter()
 	//coordinate system
 	Vector3 v2;
 
-	if (Angle(s_i, Optics::n).sintheta > kMachineEpsilon) {
+	if (fabs(Angle(s_i, Optics::n).sintheta) > kMachineEpsilon) {
 
 		v2 = crossProduct(s_i, Optics::n).normalize();
 	}
@@ -102,9 +100,6 @@ void Photon::scatter()
 									     sintheta*cos(i->y));
 	
 			i->val = sintheta*ind(s_s);
-
-		//	if (scatterings == 2)
-		//	printf("%.17e\t%.17e\t%.17e\n", i->x, i->y, i->val);
 		}
 	}
 
@@ -121,11 +116,6 @@ void Photon::scatter()
 	}
 
 	//random value to choose rect
-//	std::tr1::uniform_real<Float> probs_dist(0, fullIntegral);
-//	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng_direction(rng_core, probs_dist);
-//	std::tr1::uniform_real<Float> dist01(0, 1);
-//	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng01(rng_core, dist01);
-
 
 	Float randRect;
 	Float randX;
@@ -134,10 +124,6 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-//		randRect = rng_direction();
-//		randX = rng01();
-//		randY = rng01();
-//		randPhi = rng01();
 		randRect = rng()*fullIntegral;
 		randX = rng();
 		randY = rng();
@@ -187,10 +173,23 @@ void Photon::scatter()
 	Vector3 s_s =  Vector3(  cos(theta_s),
 						     sintheta*sin(phi_s),
 						     sintheta*cos(phi_s));
+	//fprintf(stderr, "%f\t%f\n", sintheta, phi_s, cos(phi_s));
 
-	mtx = invert(mtx);
+	//mtx = invert(mtx);
 
 	s_i = invert(mtx)*s_s;
+
+	/*Matrix3 testMtx = invert(mtx);
+	testMtx = mtx*testMtx;
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			fprintf(stderr, "%f\t", testMtx(i,j));
+
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "%f\t%f\t%f\n", s_s.x(), s_s.y(), s_s.z());
+	fprintf(stderr, "%f\t%f\t%f\n", s_i.x(), s_i.y(), s_i.z());
+*/
 
 	scatterings++;
 }

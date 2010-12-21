@@ -47,7 +47,7 @@ ScatMCApp::ScatMCApp() :
 	m_savePartition(false),
 	m_seed(1000),
 	m_maxPhotons(100),
-	m_maxScatterings(10000)
+	m_maxScatterings(10)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -158,7 +158,7 @@ int ScatMCApp::run()
 	int cnt = 0;
 	bool ready = false;
 
-//	#pragma omp parallel for
+	#pragma omp parallel for
 	for (int i = 0; i < m_maxPhotons; ++i) 
 		if (!ready) {
 
@@ -169,7 +169,9 @@ int ScatMCApp::run()
 				ph.move();
 				ph.scatter();
 
-				fprintf(stderr, "x=%f\ty=%f\tz=%f\tsx=%f\tsy=%f\tsz=%f\n", ph.pos.x(), ph.pos.y(), ph.pos.z(), ph.s_i.x(), ph.s_i.y(), ph.s_i.z());
+				//fprintf(stderr, "x=%f\ty=%f\tz=%f\tsx=%f\tsy=%f\tsz=%f\n", ph.pos.x(), ph.pos.y(), ph.pos.z(), ph.s_i.x(), ph.s_i.y(), ph.s_i.z());
+				//fprintf(stderr, "%.17f\t%.17f\t%.17f\n", ph.pos.x(), ph.pos.y(), ph.pos.z());
+
 
 				processScattering(ph);
 			}
@@ -214,10 +216,10 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Angle a_s = Angle(s_s, Optics::n);
 
 			Float scale = ph.pos.z() / s_s.z();
-			Float x = scale*s_s.x();
-			Float y = scale*s_s.y();
+			Float x     = ph.pos.x() + scale*s_s.x();
+			Float y     = ph.pos.y() + scale*s_s.y();
 
-			Float length = sqrt(ph.pos.z()*ph.pos.z() + x*x + y*y);
+			Float length = fabs(scale);
 			Float lengthFactor = exp(-length/m_length(a_s));
 			
 			Vector3 R = Vector3(x, y, 0);

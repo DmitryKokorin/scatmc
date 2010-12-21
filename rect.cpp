@@ -26,7 +26,7 @@ Rect::Rect(const int tl_,
 	square = width*height;
 }
 
-void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float /*randY*/)
+void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float randY)
 {
 	std::vector<Knot>& knots = *s_knots;
 
@@ -34,10 +34,6 @@ void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float 
 	Float b2 = knots[tr].val - b1;
 	Float b3 = knots[bl].val - b1;
 	Float b4 = b1 - knots[tr].val - knots[bl].val + knots[br].val;
-
-
-	//fprintf(stderr, "tl=%f\ttr=%f\tbl=%f\tbr=%f\n", knots[tl].val, knots[tr].val, knots[bl].val, knots[br].val);
-	//fprintf(stderr, "b1=%f\tb2=%f\tb3=%f\tb4=%f\n", b1, b2, b3, b4);
 
 	int roots;
 
@@ -60,7 +56,7 @@ void Rect::choosePointInRect(Float& x, Float& y, const Float randX, const Float 
 
 	{
 		Float y1, y2;
-		roots = solveQuadric(b3 + b4*x, 0.5*(b1 + b2*x), /*-randY*(b1+b2*x + 0.5*(b3+b4*x)*/0., y1, y2);
+		roots = solveQuadric(0.5*(b3 + b4*x), b1 + b2*x, -randY*(b1+b2*x + 0.5*(b3+b4*x)), y1, y2);
 
 		if (roots == 1)
 			y = y1;

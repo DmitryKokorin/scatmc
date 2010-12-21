@@ -28,6 +28,7 @@ public:
 
 	Float    det() const;
 	Vector3  operator*(const Vector3& rhv) const;
+	Matrix3  operator*(Matrix3& rhv) const;
 
 	friend inline Matrix3  invert(const Matrix3& mtx);
 
