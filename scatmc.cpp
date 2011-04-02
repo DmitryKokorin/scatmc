@@ -46,8 +46,8 @@ ScatMCApp::ScatMCApp() :
 	m_loadPartition(false),
 	m_savePartition(false),
 	m_seed(1000),
-	m_maxPhotons(100),
-	m_maxScatterings(1000)
+	m_maxPhotons(1000),
+	m_maxScatterings(10000)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -167,13 +167,11 @@ int ScatMCApp::run()
 			while (ph.pos.z() >= 0 && ph.scatterings < m_maxScatterings) {
 
 				ph.move();
-				ph.scatter();
-
-				//fprintf(stderr, "x=%f\ty=%f\tz=%f\tsx=%f\tsy=%f\tsz=%f\n", ph.pos.x(), ph.pos.y(), ph.pos.z(), ph.s_i.x(), ph.s_i.y(), ph.s_i.z());
-				//fprintf(stderr, "%.17f\t%.17f\t%.17f\n", ph.pos.x(), ph.pos.y(), ph.pos.z());
-
 
 				processScattering(ph);
+
+				ph.scatter();
+
 			}
 
 			#pragma omp critical
@@ -195,12 +193,13 @@ void ScatMCApp::processScattering(const Photon& ph)
 {
 	Indicatrix ind(ph.s_i, Optics::n);
 
-	Float thetaStep = kThetaMax / kThetaSize;
-	Float phiStep   = 2*M_PI / kThetaSize;
+	Float thetaStep = M_PI/*kThetaMax*/ / kThetaSize;
+	Float phiStep   = 2*M_PI / kPhiSize;
 
     #pragma omp critical
 	{
-	
+	//fprintf(stderr, "%f\n", ph.fullIntegral);
+
 	for (int i = 0; i < kThetaSize; ++i)
 		for (int j = 0; j < kPhiSize; ++j) {
 
@@ -208,10 +207,11 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float phi_s   = j*phiStep;
 
 			Float sintheta_s = sin(theta_s);
+			Float costheta_s = cos(theta_s);
 
 			Vector3 s_s = Vector3(sintheta_s*cos(phi_s),  //wrong parity, but who cares?
 								  sintheta_s*sin(phi_s),
-								  -cos(theta_s));
+								  -costheta_s);
 
 			Angle a_s = Angle(s_s, Optics::n);
 
@@ -223,24 +223,34 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float lengthFactor = exp(-length/m_length(a_s));
 			
 			Vector3 R = Vector3(x, y, 0);
-			Vector3 q = Optics::ke(s_s, Optics::n) - Optics::ke(ph.s_i, Optics::n);
+			Vector3 q = Optics::ke(s_s, Optics::n);
 
 			//TODO: think more about it
-			Float res = lengthFactor*cos(q*R)/**ind(s_s)/ph.fullIntegral*sintheta_s*/;
+			//Float res = lengthFactor* (ind(s_s)/ph.fullIntegral) * cos(q*R);
+//			fprintf(stderr, "%f\n", );
+			Float res = lengthFactor*ind(s_s)/ph.fullIntegral*cos(q*R);
+			//
+			if (!isnan(res)) {
+				if (0 == ph.scatterings)
+					det1[j][i] += res;
+				else {
 
-			if (1 == ph.scatterings)
-				det1[j][i] += res;
+					if (1 <= ph.scatterings)
+						det2[j][i] += res;
 
-			if (2 <= ph.scatterings)
-				det2[j][i] += res;
+					if (4 <= ph.scatterings)
+						det5[j][i] += res;
 
-			if (5 <= ph.scatterings)
-				det5[j][i] += res;
+					if (100 <= ph.scatterings)
+						det100[j][i] += res;
 
-			if (100 <= ph.scatterings)
-				det100[j][i] += res;
+					detall[j][i] += res;
+				}
+			}
+			else {
 
-			detall[j][i] += res;
+				fprintf(stderr, "%f\n", ph.fullIntegral);
+			}
 		}
 	}
 }
@@ -262,7 +272,7 @@ void ScatMCApp::output()
 
 	
 
-	Float thetaStep = kThetaMax / kThetaSize;
+	Float thetaStep = M_PI/*kThetaMax*/ / kThetaSize;
 	Float phiStep   = 2*M_PI / kPhiSize;
 
 	for (int i = 0; i < kThetaSize; ++i)

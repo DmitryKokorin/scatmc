@@ -55,19 +55,59 @@ Photon::Photon() :
 void Photon::move()
 {
 	Float rnd;
+	Float extLength = length(Angle(s_i, Optics::n));
+	Float c1 = (s_i.z() >= 0.0 ? 1.0 : 1.0 - exp(pos.z()/s_i.z()/extLength));
 	#pragma omp critical
 	{
-		rnd = 1. - rng();
+		rnd = rng();
 	}
 
-	Float d   = -log(rnd) * length(Angle(s_i, Optics::n));
-	//fprintf(stderr, "d_pos: %.17f\t%.17f\t%.17f\n", d*s_i.x(), d*s_i.y(), d*s_i.z());
+	Float d   = -log(1. - c1*rnd) * extLength;
 
 	pos += d*s_i;
 }
 
 void Photon::scatter()
 {
+    //roughly estimate escape function
+    Float esc = 0.;
+
+    {
+        const Float MIN_PHI = 0.;
+        const Float MAX_PHI = 2*M_PI;
+        const Float MIN_THETA = M_PI;
+        const Float MAX_THETA = 2*M_PI;
+
+        const int PHI_ITERATIONS = 10;
+        const int THETA_ITERATIONS = 10;
+
+        const Float PHI_STEP = (MAX_PHI - MIN_PHI) / PHI_ITERATIONS;
+        const Float THETA_STEP = (MAX_THETA - MIN_THETA) / THETA_ITERATIONS;
+
+        Float theta = MIN_THETA,
+              phi = MIN_PHI;
+
+        Indicatrix ind = Indicatrix(s_i, Optics::n);
+
+        for (int i = 0; i < PHI_ITERATIONS; ++i) {
+            for (int j = 0; j < THETA_ITERATIONS; ++j) {
+                
+
+                Vector3 direction = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+                Angle angle = Angle(direction, Optics::n);
+
+                esc += ind(direction)*exp(pos.z()/length(angle)/direction.z());
+
+                theta += THETA_STEP;        
+            }
+
+            phi += PHI_STEP;
+        }
+
+        esc *= PHI_STEP*THETA_STEP;
+    }
+
+
 	//coordinate system
 	Vector3 v2;
 
@@ -130,6 +170,10 @@ void Photon::scatter()
 			m_rectValues.push_back(fullIntegral);
 		}
 	}
+
+
+    //calc weight
+    weight *= 1. - esc/fullIntegral;
 
 
 
