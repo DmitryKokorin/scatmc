@@ -51,6 +51,8 @@ private:
 	int m_maxPhotons;
 	int m_maxScatterings;
 
+	Float m_minPhotonWeight;
+
 	static const int   kPhiSize    = 32;
 	static const int   kThetaSize  = 50;
 

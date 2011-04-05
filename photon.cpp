@@ -56,15 +56,22 @@ void Photon::move()
 {
 	Float rnd;
 	Float extLength = length(Angle(s_i, Optics::n));
-	Float c1 = (s_i.z() >= 0.0 ? 1.0 : 1.0 - exp(pos.z()/s_i.z()/extLength));
+
+    Float c1 = (s_i.z() >= 0) ? 1. : -expm1(pos.z()/s_i.z()/extLength);
+
 	#pragma omp critical
 	{
 		rnd = rng();
 	}
 
-	Float d   = -log(1. - c1*rnd) * extLength;
+	Float d = -log1p(-c1*rnd)*extLength;
+
+//    d = -log(1. - c1*rnd) * extLength;
+
 
 	pos += d*s_i;
+
+	//fprintf(stderr, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n", pos.x(), pos.y(), pos.z(), d, s_i.z(), extLength);
 }
 
 void Photon::scatter()
@@ -75,8 +82,8 @@ void Photon::scatter()
     {
         const Float MIN_PHI = 0.;
         const Float MAX_PHI = 2*M_PI;
-        const Float MIN_THETA = M_PI;
-        const Float MAX_THETA = 2*M_PI;
+        const Float MIN_THETA = 0.5*M_PI + 1e-3;
+        const Float MAX_THETA = M_PI - 1e-3;
 
         const int PHI_ITERATIONS = 10;
         const int THETA_ITERATIONS = 10;
@@ -84,18 +91,26 @@ void Photon::scatter()
         const Float PHI_STEP = (MAX_PHI - MIN_PHI) / PHI_ITERATIONS;
         const Float THETA_STEP = (MAX_THETA - MIN_THETA) / THETA_ITERATIONS;
 
-        Float theta = MIN_THETA,
+        Float theta,
               phi = MIN_PHI;
 
         Indicatrix ind = Indicatrix(s_i, Optics::n);
 
         for (int i = 0; i < PHI_ITERATIONS; ++i) {
+
+            theta = MIN_THETA;
+
             for (int j = 0; j < THETA_ITERATIONS; ++j) {
                 
 
                 Vector3 direction = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+
+                //if (direction.z() >= 0)
+                //    continue;
+
                 Angle angle = Angle(direction, Optics::n);
 
+                //fprintf(stderr, "a=%.12e\tw=%.12e\n", angle.theta, pos.z()/length(angle)/direction.z());
                 esc += ind(direction)*exp(pos.z()/length(angle)/direction.z());
 
                 theta += THETA_STEP;        
@@ -173,6 +188,7 @@ void Photon::scatter()
 
 
     //calc weight
+    //fprintf(stderr, "esc=%.12e\tint=%.12e\n", esc, fullIntegral);
     weight *= 1. - esc/fullIntegral;
 
 

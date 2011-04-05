@@ -47,7 +47,8 @@ ScatMCApp::ScatMCApp() :
 	m_savePartition(false),
 	m_seed(1000),
 	m_maxPhotons(1000),
-	m_maxScatterings(10000)
+	m_maxScatterings(10000),
+	m_minPhotonWeight(1e-12)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -164,7 +165,9 @@ int ScatMCApp::run()
 
 			Photon ph;
 		
-			while (ph.pos.z() >= 0 && ph.scatterings < m_maxScatterings) {
+			while (ph.pos.z() >= 0 
+			        && ph.scatterings < m_maxScatterings
+			        && ph.weight > m_minPhotonWeight) {
 
 				ph.move();
 
@@ -174,10 +177,13 @@ int ScatMCApp::run()
 
 			}
 
+			fprintf(stderr, "weight = %.12e\n", ph.weight);
+
 			#pragma omp critical
 			{
 				++cnt;
 				fprintf(stderr, "%d\t%d\n", cnt, ph.scatterings);
+
 				if (0 == cnt % 100)
 					ready = checkResultsReady();
 			}
@@ -193,7 +199,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 {
 	Indicatrix ind(ph.s_i, Optics::n);
 
-	Float thetaStep = M_PI/*kThetaMax*/ / kThetaSize;
+	Float thetaStep = M_PI / kThetaMax /*/ kThetaSize*/;
 	Float phiStep   = 2*M_PI / kPhiSize;
 
     #pragma omp critical
@@ -272,7 +278,7 @@ void ScatMCApp::output()
 
 	
 
-	Float thetaStep = M_PI/*kThetaMax*/ / kThetaSize;
+	Float thetaStep = M_PI / kThetaMax /*/ kThetaSize*/;
 	Float phiStep   = 2*M_PI / kPhiSize;
 
 	for (int i = 0; i < kThetaSize; ++i)

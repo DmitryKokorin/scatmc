@@ -83,10 +83,15 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 
 Float ExtLength::operator()(const Angle& a) const
 {
-	if (a.theta < 0 || a.theta >= M_PI)
-		return 0.;
+//	if (a.theta < 0 || a.theta >= M_PI)
+//		return 0.;
+    Float theta = a.theta;
 
-	Float theta = (a.theta < M_PI * 0.5) ? a.theta : (M_PI - a.theta);
+    theta = fabs(theta);
+    theta = (theta >= M_PI) ? theta - M_PI : theta;
+
+
+	theta = (theta < M_PI * 0.5) ? theta : (M_PI - theta);
 
 	//locate index
 	Float mu = theta / kResolution;
