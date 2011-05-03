@@ -1,6 +1,6 @@
 #include <omp.h>
 
-#include "extlength.h"
+#include "freepath.h"
 #include "indicatrix.h"
 #include "partition.h"
 #include "optics.h"
@@ -9,7 +9,7 @@
 
 
 Float Photon::probs[kThetaIterations*kPhiIterations] = {0};
-ExtLength* Photon::s_length       = NULL;
+FreePath* Photon::s_length        = NULL;
 Partition* Photon::s_partition    = NULL;
 
 
@@ -24,7 +24,7 @@ variate_generator<mt19937, uniform_real<Float> > Photon::rng =
 
 
 
-void Photon::init(	ExtLength* length_,
+void Photon::init(	FreePath* length_,
 					Partition* partition_,
 					unsigned long seed_)
 {
@@ -47,14 +47,12 @@ Photon::Photon() :
 	partition(*s_partition),
 	m_knotValues(),
 	m_rectValues(),
-	m_knotEscValues()//,
-//	m_rectEscValues()
+	m_knotEscValues()
 {
 	m_knotValues.reserve(s_partition->m_knots.size());
 	m_rectValues.reserve(s_partition->m_rects.size());
 
 	m_knotEscValues.reserve(s_partition->m_knots.size());
-//    m_rectEscValues.reserve(s_partition->m_knots.size());
 }
 
 
@@ -77,47 +75,6 @@ void Photon::move()
 
 void Photon::scatter()
 {
- /*   //roughly estimate escape function
-    Float esc = 0.;
-
-    {
-        const Float MIN_PHI = 0.;
-        const Float MAX_PHI = 2*M_PI;
-        const Float MIN_THETA = 0.5*M_PI + 1e-3;
-        const Float MAX_THETA = M_PI - 1e-3;
-
-        const int PHI_ITERATIONS = 10;
-        const int THETA_ITERATIONS = 10;
-
-        const Float PHI_STEP = (MAX_PHI - MIN_PHI) / PHI_ITERATIONS;
-        const Float THETA_STEP = (MAX_THETA - MIN_THETA) / THETA_ITERATIONS;
-
-        Float theta, phi;
-
-        Indicatrix ind = Indicatrix(s_i, Optics::n);
-
-        for (int i = 0; i < PHI_ITERATIONS; ++i) {
-            
-            phi = MIN_PHI + i*PHI_STEP;
-           
-            for (int j = 0; j < THETA_ITERATIONS; ++j) {
-
-                theta = MIN_THETA + j*THETA_STEP;
-
-                Vector3 direction = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
-
-                Angle angle = Angle(direction, Optics::n);
-
-                esc += ind(direction)*sin(theta)*exp(pos.z()/length(angle)/direction.z());
-
-                theta += THETA_STEP;        
-            }
-        }
-
-        esc *= PHI_STEP*THETA_STEP;
-    }
-*/
-
 	//coordinate system
 	Vector3 v2;
 
@@ -160,7 +117,7 @@ void Photon::scatter()
 			Vector3 s_s      = Vector3(  cos(k->x),
 									     sintheta*sin(k->y),
 									     sintheta*cos(k->y));
-	
+
 	        res = sintheta*ind(s_s);
 			m_knotValues.push_back(res);
 
@@ -172,13 +129,12 @@ void Photon::scatter()
             }
             else {
 
-                dist =  pos.z() / sz_angle.costheta;   
+                dist =  pos.z() / sz_angle.costheta;
                 m_knotEscValues.push_back(res*exp(dist/length(Angle(s_s, nn))));
             }
 		}
 	}
 
-	
 	RectsVector& rects = partition.m_rects;
 
 	{
@@ -191,21 +147,20 @@ void Photon::scatter()
 			Float rectIntegral = 0.25* (m_knotValues[(*i).tl] +
 										m_knotValues[(*i).tr] +
 										m_knotValues[(*i).bl] +
-										m_knotValues[(*i).br]) * 
+										m_knotValues[(*i).br]) *
 								(*i).square;
 
 			fullIntegral += rectIntegral;
 
             Float rectEscIntegral = 0.25 * (m_knotEscValues[(*i).tl] +
                                             m_knotEscValues[(*i).tr] +
-                                            m_knotEscValues[(*i).bl] + 
+                                            m_knotEscValues[(*i).bl] +
                                             m_knotEscValues[(*i).br]) *
                                 (*i).square;
 
             fullEscIntegral += rectEscIntegral;
 
 			m_rectValues.push_back(fullIntegral);
-		//	m_rectEscValues.push_back(fullEscIntegral);
 		}
 	}
 
@@ -245,11 +200,11 @@ void Photon::scatter()
 	   	}
        	else if (randRect < rects[mid].val) {
 
-        	last = mid - 1; 
+        	last = mid - 1;
 	   	}
        	else {
 
-        	rectIdx = mid;     
+        	rectIdx = mid;
            	break;
 	   	}
     }
@@ -330,4 +285,3 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 	x += partition.m_knots[rect.tl].x;
 	y += partition.m_knots[rect.tl].y;
 }
-

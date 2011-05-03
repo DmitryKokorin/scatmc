@@ -4,7 +4,7 @@
 
 #include "common.h"
 
-#include "extlength.h"
+#include "freepath.h"
 #include "photon.h"
 #include "indicatrix.h"
 #include "partition.h"
@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
 		app.printHelp();
 		res = -1;
 	}
-    
+
 	return res;
 }
 
@@ -39,10 +39,10 @@ const Float ScatMCApp::kThetaMax = 1e-4;
 ScatMCApp::ScatMCApp() :
 	m_length(),
 	m_executableFileName(),
-	m_extLengtsFileName(),
+	m_freePathFileName(),
 	m_partitionFileName(),
-	m_loadExtLengths(false),
-	m_saveExtLengths(false),
+	m_loadFreePath(false),
+	m_saveFreePath(false),
 	m_loadPartition(false),
 	m_savePartition(false),
 	m_seed(1000),
@@ -74,16 +74,16 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 			m_seed = atoi(argv[i]);
 		}
-		else if(!strcmp(argv[i], "--loadlengths")) {
+		else if(!strcmp(argv[i], "--loadfreepath")) {
 
-			if (m_saveExtLengths)
+			if (m_saveFreePath)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_loadExtLengths    = true;
-			m_extLengtsFileName = argv[i];
+			m_loadFreePath     = true;
+			m_freePathFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--loadpartition")) {
 
@@ -96,16 +96,16 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadPartition     = true;
 			m_partitionFileName = argv[i];
 		}
-		else if (!strcmp(argv[i], "--savelengths")) {
+		else if (!strcmp(argv[i], "--savefreepath")) {
 
-			if (m_loadExtLengths)
+			if (m_loadFreePath)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_saveExtLengths    = true;
-			m_extLengtsFileName = argv[i];
+			m_saveFreePath    = true;
+			m_freePathFileName = argv[i];
 
 		}
 		else if (!strcmp(argv[i], "--savepartition")) {
@@ -133,7 +133,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 			m_maxScatterings = atoi(argv[i]);
 		}
-		else 
+		else
 			return false;
 	}
 
@@ -145,7 +145,7 @@ int ScatMCApp::run()
 {
 	int res = 0;
 
-	res = prepareExtinctionLengths(m_length);
+	res = prepareFreePath(m_length);
 
 	if (0 != res)
 		return res;
@@ -157,18 +157,18 @@ int ScatMCApp::run()
 		return res;
 
 	fprintf(stderr, "scattering...\n");
-	Photon::init(&m_length, &p, getSeed()); 
+	Photon::init(&m_length, &p, getSeed());
 
 	int cnt = 0;
 	bool ready = false;
 
 	#pragma omp parallel for
-	for (int i = 0; i < m_maxPhotons; ++i) 
+	for (int i = 0; i < m_maxPhotons; ++i)
 		if (!ready) {
 
 			Photon ph;
-		
-			while (ph.pos.z() >= 0 
+
+			while (ph.pos.z() >= 0
 			        && ph.scatterings < m_maxScatterings
 			        && ph.weight > m_minPhotonWeight) {
 
@@ -232,7 +232,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 			Float length = fabs(scale);
 			Float lengthFactor = exp(-length/m_length(a_s));
-			
+
 			Vector3 R = Vector3(x, y, 0);
 			Vector3 q = Optics::ke(s_s, Optics::n);
 
@@ -268,7 +268,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 				fprintf(stderr, "%f\n", ph.fullIntegral);
 			}
 		}
-	
+
 	}
 }
 
@@ -293,7 +293,6 @@ void ScatMCApp::output()
 
 	detallfile   = fopen("output/peakall.txt", "w");
 
-	
 
 	Float thetaStep = kThetaMax / kThetaSize;
 	Float phiStep   = 2*M_PI / kPhiSize;
@@ -311,7 +310,6 @@ void ScatMCApp::output()
 			fprintf(det5000file,  "%e\t%e\t%.17e\n", theta, phi, det5000[j][i]);
 			fprintf(det100000file,  "%e\t%e\t%.17e\n", theta, phi, det100000[j][i]);
 			fprintf(detallfile,   "%e\t%e\t%.17e\n", theta, phi, detall[j][i]);
-			
 		}
 
 	fclose(det1file);
@@ -336,11 +334,11 @@ bool ScatMCApp::checkResultsReady()
 
 			fprintf(stderr, "relative error: %f\n", err);
 			memcpy(lastdet, detall, sizeof(lastdet));
-			
+
 			return false;
 		}
 	}
-		
+
 	return true;
 }
 
@@ -349,24 +347,24 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "Usage: %s [options]", m_executableFileName.c_str());
 	fprintf(stderr, "\n\nAvailable options:");
 	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
-	fprintf(stderr, "\n--loadlengths [filename]\t\tload extinction lengths from file");
+	fprintf(stderr, "\n--loadfreepath [filename]\t\tload extinction lengths from file");
 	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
-	fprintf(stderr, "\n--savelengths [filename]\t\tsave extinction lengths to file");
+	fprintf(stderr, "\n--savefreepath [filename]\t\tsave extinction lengths to file");
 	fprintf(stderr, "\n--savepartition [filename]\t\tsave partition to file");
 	fprintf(stderr, "\n--photons [photons]\t\t\tnumber of photons to scatter");
 	fprintf(stderr, "\n--scatterings [scatterings]\t\tmax scatterings for each photon");
 	fprintf(stderr, "\n");
 }
 
-int ScatMCApp::prepareExtinctionLengths(ExtLength& l)
+int ScatMCApp::prepareFreePath(FreePath& l)
 {
-	if (isLoadExtLengths()) {
+	if (isLoadFreePath()) {
 
-		fprintf(stderr, "loading extinction lengths...");
+		fprintf(stderr, "loading free path file...");
 
-		if (!l.load(getExtLengthsFileName())) {
+		if (!l.load(getFreePathFileName())) {
 
-			fprintf(stderr, "can't load extinction lengths\n");
+			fprintf(stderr, "can't load free path data\n");
 			return -1;
 		}
 		else {
@@ -375,18 +373,18 @@ int ScatMCApp::prepareExtinctionLengths(ExtLength& l)
 		}
 	}
 	else {
-		
-		fprintf(stderr, "calculating extinction lengths...\n");
+
+		fprintf(stderr, "calculating free path data...\n");
 		l.create();
 	}
 
-	if (isSaveExtLengths()) {
+	if (isSaveFreePath()) {
 
-		fprintf(stderr, "saving extinction lengths...");
+		fprintf(stderr, "saving free path data to file...");
 
-		if (!l.save(getExtLengthsFileName())) {
+		if (!l.save(getFreePathFileName())) {
 
-			fprintf(stderr, "can't save extinction lengths\n");
+			fprintf(stderr, "can't save free path data\n");
 			return -1;
 		}
 		else {
@@ -415,7 +413,7 @@ int ScatMCApp::preparePartition(Partition& p)
 		}
 	}
 	else {
-		
+
 		fprintf(stderr, "creating partition...\n");
 		p.create();
 	}

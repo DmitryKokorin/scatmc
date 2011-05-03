@@ -9,11 +9,11 @@
 class Angle;
 
 
-class ExtLength 
+class FreePath
 {
 public:
 
-    ExtLength() {}
+    FreePath() {}
     bool create(const int kThetaIterations = 1000, const int kPhiIterations = 1000);
 
     bool load(const std::string& name);

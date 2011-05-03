@@ -16,10 +16,9 @@ class Photon
 
 {
 public:
-	
-	Photon();
-    static void init(ExtLength* length, Partition* partition, unsigned long seed = 1000);
 
+	Photon();
+    static void init(FreePath* length, Partition* partition, unsigned long seed = 1000);
 
 	void move();
 	void scatter();
@@ -38,30 +37,29 @@ protected:
 	void choosePointInRect(Float& x, Float& y, const int rectIdx, const Float randX, const Float randY);
 
 
-	static std::tr1::mt19937 rng_core;  
-	static std::tr1::uniform_real<Float> dist; 
+	static std::tr1::mt19937 rng_core;
+	static std::tr1::uniform_real<Float> dist;
 
 	// have to use this due to 40263 gcc bug in uniform_real realization
 	static std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng;
 
 
 	//these two are to simulate static behaviour for a reference (without ugly pointer syntax)
-	static ExtLength* s_length;  
-	ExtLength& length;   
+	static FreePath* s_length;
+	FreePath& length;
 
-	static Partition* s_partition;  
-	Partition& partition;   
+	static Partition* s_partition;
+	Partition& partition;
 
 	ValuesVector    m_knotValues;
 	ValuesVector    m_rectValues;
 
 	ValuesVector    m_knotEscValues;  //escape function values
-//	ValuesVector    m_rectEscValues;
 
 
 	static const int kThetaIterations = 1000;
 	static const int kPhiIterations   = 1000;
-	
+
 	static Float probs[kThetaIterations*kPhiIterations];
 };
 

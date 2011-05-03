@@ -15,20 +15,20 @@ public:
 	bool getOpts(int argc, char ** argv);
 	void printHelp();
 
-	
+
 private:
 
 	int  getSeed() { return m_seed; }
 
-	bool isLoadExtLengths() const {return m_loadExtLengths;}
-	bool isSaveExtLengths() const {return m_saveExtLengths;}
+	bool isLoadFreePath() const {return m_loadFreePath;}
+	bool isSaveFreePath() const {return m_saveFreePath;}
 	bool isLoadPartition() const {return m_loadPartition;}
 	bool isSavePartition() const {return m_savePartition;}
 
-	const std::string& getExtLengthsFileName() const {return m_extLengtsFileName;}
+	const std::string& getFreePathFileName() const {return m_freePathFileName;}
 	const std::string& getPartitionFileName() const {return m_partitionFileName;}
 
-	int  prepareExtinctionLengths(ExtLength& length);
+	int  prepareFreePath(FreePath& length);
 	int  preparePartition(Partition& partition);
 
 
@@ -36,14 +36,14 @@ private:
 	void output();
 	bool checkResultsReady();
 
-	ExtLength m_length;
+	FreePath m_length;
 
 	std::string m_executableFileName;
-	std::string m_extLengtsFileName;
+	std::string m_freePathFileName;
 	std::string m_partitionFileName;
 
-	bool m_loadExtLengths;
-	bool m_saveExtLengths;
+	bool m_loadFreePath;
+	bool m_saveFreePath;
 	bool m_loadPartition;
 	bool m_savePartition;
 

@@ -5,15 +5,15 @@
 
 #include "optics.h"
 #include "indicatrix.h"
-#include "extlength.h"
+#include "freepath.h"
 #include "coords.h"
 
 
-const Float ExtLength::kResolution = 0.5 * M_PI / (kPoints-1);
+const Float FreePath::kResolution = 0.5 * M_PI / (kPoints-1);
 
 
 
-bool ExtLength::create(const int kThetaIterations /*= 1000*/,
+bool FreePath::create(const int kThetaIterations /*= 1000*/,
                        const int kPhiIterations /*= 1000*/)
 {
    	const Float kThetaStep = M_PI / kThetaIterations;
@@ -32,7 +32,7 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
 
 		//create coordinate system
-		
+
 		v2 = crossProduct(s_i, Optics::n).normalize();
 		v3 = crossProduct(v2, s_i);
 
@@ -40,24 +40,23 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 		nn = mtx*Optics::n;
 
 		k_i = Vector3(1., 0., 0.)*Optics::ne(a_i);
-		
+
 		Indicatrix ind = Indicatrix(k_i, nn);
 
 		Float integral = 0.;
 
-	
 		#pragma omp parallel
 		{
 			Float t_integral = 0;
- 
+
 			#pragma omp for
 			for (int j = 0; j < kThetaIterations; ++j) {
-			
+
 				Float theta_s = j*kThetaStep;
 				Float phi_s   = 0.;
-			
+
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
-				
+
 					Vector3 s_s = Vector3(  cos(theta_s),
 											sin(theta_s)*sin(phi_s),
 											sin(theta_s)*cos(phi_s));
@@ -72,7 +71,7 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
             #pragma omp critical
 			integral += t_integral;
 		}
-		
+
 		lengths[i] = 1./(integral*kThetaStep*kPhiStep);
 	}
 
@@ -81,10 +80,8 @@ bool ExtLength::create(const int kThetaIterations /*= 1000*/,
 	return true;
 }
 
-Float ExtLength::operator()(const Angle& a) const
+Float FreePath::operator()(const Angle& a) const
 {
-//	if (a.theta < 0 || a.theta >= M_PI)
-//		return 0.;
     Float theta = a.theta;
 
     theta = fabs(theta);
@@ -97,12 +94,12 @@ Float ExtLength::operator()(const Angle& a) const
 	Float mu = theta / kResolution;
 	int  idx = (int)(mu);
 
-	mu  = mu - idx;  
+	mu  = mu - idx;
 
 	return lengths[idx]*(1. - mu) + lengths[idx+1] * mu;
 }
 
-bool ExtLength::load(const std::string& name)
+bool FreePath::load(const std::string& name)
 {
 	FILE* file = fopen(name.c_str(), "r");
 
@@ -121,7 +118,7 @@ bool ExtLength::load(const std::string& name)
 	}
 
 	Float theta;
-	
+
 	for (int i = 0; i < kPoints; ++i) {
 
 		res = fscanf(file, "%le\t%le", &theta, &lengths[i]);
@@ -138,7 +135,7 @@ bool ExtLength::load(const std::string& name)
 	return true;
 }
 
-bool ExtLength::save(const std::string& name)
+bool FreePath::save(const std::string& name)
 {
 	FILE* file = fopen(name.c_str(), "w");
 
