@@ -16,7 +16,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const Float Partition::kEpsilon = 0.01;
+const Float Partition::kEpsilon = 0.03;
 const Float Partition::kXResolution = M_PI / Partition::kSize;
 const Float Partition::kYResolution = M_PI / Partition::kSize;
 
@@ -77,7 +77,8 @@ void Partition::refineNode(Node* node)
 	if (node->isLeaf()) {
 
 		Float nodeIntegral    = integral(node->rect);
-		Float rectMaxError    = nodeIntegral*kEpsilon;
+		//Float rectMaxError    = nodeIntegral*kEpsilon;
+		Float rectMaxError    = std::max(nodeIntegral*kEpsilon, kEpsilon*m_fullIntegral*((Float)(node->rect.square)/m_root->rect.square));
 
 		if (node->rect.canSplitX() && node->rect.canSplitY()) {
 

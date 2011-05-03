@@ -31,6 +31,7 @@ public:
 	int scatterings;
 	Float weight;
 	Float fullIntegral;
+	Float fullEscIntegral;
 
 protected:
 
@@ -53,6 +54,9 @@ protected:
 
 	ValuesVector    m_knotValues;
 	ValuesVector    m_rectValues;
+
+	ValuesVector    m_knotEscValues;  //escape function values
+//	ValuesVector    m_rectEscValues;
 
 
 	static const int kThetaIterations = 1000;

@@ -42,13 +42,19 @@ Photon::Photon() :
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
+	fullEscIntegral(0.),
 	length(*s_length),
 	partition(*s_partition),
 	m_knotValues(),
-	m_rectValues()
+	m_rectValues(),
+	m_knotEscValues()//,
+//	m_rectEscValues()
 {
 	m_knotValues.reserve(s_partition->m_knots.size());
 	m_rectValues.reserve(s_partition->m_rects.size());
+
+	m_knotEscValues.reserve(s_partition->m_knots.size());
+//    m_rectEscValues.reserve(s_partition->m_knots.size());
 }
 
 
@@ -66,17 +72,12 @@ void Photon::move()
 
 	Float d = -log1p(-c1*rnd)*extLength;
 
-//    d = -log(1. - c1*rnd) * extLength;
-
-
 	pos += d*s_i;
-
-	//fprintf(stderr, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n", pos.x(), pos.y(), pos.z(), d, s_i.z(), extLength);
 }
 
 void Photon::scatter()
 {
-    //roughly estimate escape function
+ /*   //roughly estimate escape function
     Float esc = 0.;
 
     {
@@ -91,37 +92,31 @@ void Photon::scatter()
         const Float PHI_STEP = (MAX_PHI - MIN_PHI) / PHI_ITERATIONS;
         const Float THETA_STEP = (MAX_THETA - MIN_THETA) / THETA_ITERATIONS;
 
-        Float theta,
-              phi = MIN_PHI;
+        Float theta, phi;
 
         Indicatrix ind = Indicatrix(s_i, Optics::n);
 
         for (int i = 0; i < PHI_ITERATIONS; ++i) {
-
-            theta = MIN_THETA;
-
+            
+            phi = MIN_PHI + i*PHI_STEP;
+           
             for (int j = 0; j < THETA_ITERATIONS; ++j) {
-                
+
+                theta = MIN_THETA + j*THETA_STEP;
 
                 Vector3 direction = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
 
-                //if (direction.z() >= 0)
-                //    continue;
-
                 Angle angle = Angle(direction, Optics::n);
 
-                //fprintf(stderr, "a=%.12e\tw=%.12e\n", angle.theta, pos.z()/length(angle)/direction.z());
-                esc += ind(direction)*exp(pos.z()/length(angle)/direction.z());
+                esc += ind(direction)*sin(theta)*exp(pos.z()/length(angle)/direction.z());
 
                 theta += THETA_STEP;        
             }
-
-            phi += PHI_STEP;
         }
 
         esc *= PHI_STEP*THETA_STEP;
     }
-
+*/
 
 	//coordinate system
 	Vector3 v2;
@@ -140,7 +135,8 @@ void Photon::scatter()
 
 	Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
 
-	Vector3 nn = mtx*Optics::n;
+	Vector3 nn = mtx*Optics::n;            //director in k_i based coordinate system
+	Vector3 oz = mtx*Vector3(0., 0., 1.);  //z axis in k_i based coordinate system
 
 	Angle a_i = Angle(v1, nn);
 	Vector3 k_i = Optics::ke(v1, a_i);
@@ -153,6 +149,10 @@ void Photon::scatter()
 		KnotsVector::iterator k;
 
 		m_knotValues.clear();
+		m_knotEscValues.clear();
+
+		Float res;
+		Float dist;
 
 		for (k = knots.begin(); k != knots.end(); ++k) {
 
@@ -161,7 +161,20 @@ void Photon::scatter()
 									     sintheta*sin(k->y),
 									     sintheta*cos(k->y));
 	
-			m_knotValues.push_back(sintheta*ind(s_s));
+	        res = sintheta*ind(s_s);
+			m_knotValues.push_back(res);
+
+			Angle sz_angle  = Angle(s_s, oz);
+
+            if (sz_angle.costheta >= -kMachineEpsilon) {
+
+                m_knotEscValues.push_back(0.);
+            }
+            else {
+
+                dist =  pos.z() / sz_angle.costheta;   
+                m_knotEscValues.push_back(res*exp(dist/length(Angle(s_s, nn))));
+            }
 		}
 	}
 
@@ -182,15 +195,23 @@ void Photon::scatter()
 								(*i).square;
 
 			fullIntegral += rectIntegral;
+
+            Float rectEscIntegral = 0.25 * (m_knotEscValues[(*i).tl] +
+                                            m_knotEscValues[(*i).tr] +
+                                            m_knotEscValues[(*i).bl] + 
+                                            m_knotEscValues[(*i).br]) *
+                                (*i).square;
+
+            fullEscIntegral += rectEscIntegral;
+
 			m_rectValues.push_back(fullIntegral);
+		//	m_rectEscValues.push_back(fullEscIntegral);
 		}
 	}
 
 
     //calc weight
-    //fprintf(stderr, "esc=%.12e\tint=%.12e\n", esc, fullIntegral);
-    weight *= 1. - esc/fullIntegral;
-
+    weight *= 1. - fullEscIntegral/fullIntegral;
 
 
 	//random value to choose rect

@@ -64,6 +64,8 @@ private:
 	Float det2[kPhiSize][kThetaSize];
 	Float det5[kPhiSize][kThetaSize];
 	Float det100[kPhiSize][kThetaSize];
+	Float det5000[kPhiSize][kThetaSize];
+    Float det100000[kPhiSize][kThetaSize];
 	Float detall[kPhiSize][kThetaSize];
 
 	Float lastdet[kPhiSize][kThetaSize];

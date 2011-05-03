@@ -48,12 +48,15 @@ ScatMCApp::ScatMCApp() :
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(10000),
-	m_minPhotonWeight(1e-12)
+	m_minPhotonWeight(1e-6)
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
 	memset(&det5,     0, sizeof(det5));
 	memset(&det100,   0, sizeof(det100));
+	memset(&det5000,   0, sizeof(det100));
+    memset(&det100000,   0, sizeof(det100));
+
 	memset(&detall,   0, sizeof(detall));
 	memset(&lastdet,  0, sizeof(lastdet));
 }
@@ -175,6 +178,9 @@ int ScatMCApp::run()
 
 				ph.scatter();
 
+				if (0 == ph.scatterings % 100)
+				    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
+
 			}
 
 			fprintf(stderr, "weight = %.12e\n", ph.weight);
@@ -199,12 +205,11 @@ void ScatMCApp::processScattering(const Photon& ph)
 {
 	Indicatrix ind(ph.s_i, Optics::n);
 
-	Float thetaStep = M_PI / kThetaMax /*/ kThetaSize*/;
+	Float thetaStep = kThetaMax / kThetaSize;
 	Float phiStep   = 2*M_PI / kPhiSize;
 
     #pragma omp critical
 	{
-	//fprintf(stderr, "%f\n", ph.fullIntegral);
 
 	for (int i = 0; i < kThetaSize; ++i)
 		for (int j = 0; j < kPhiSize; ++j) {
@@ -231,24 +236,29 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Vector3 R = Vector3(x, y, 0);
 			Vector3 q = Optics::ke(s_s, Optics::n);
 
-			//TODO: think more about it
-			//Float res = lengthFactor* (ind(s_s)/ph.fullIntegral) * cos(q*R);
-//			fprintf(stderr, "%f\n", );
-			Float res = lengthFactor*ind(s_s)/ph.fullIntegral*cos(q*R);
-			//
+			Float probFactor = ind(s_s)/ph.fullIntegral;
+
+			Float res = ph.weight*lengthFactor*probFactor*cos(q*R);
+
 			if (!isnan(res)) {
 				if (0 == ph.scatterings)
 					det1[j][i] += res;
 				else {
 
-					if (1 <= ph.scatterings)
+					if (1 == ph.scatterings)
 						det2[j][i] += res;
 
-					if (4 <= ph.scatterings)
+					if (4 == ph.scatterings)
 						det5[j][i] += res;
 
-					if (100 <= ph.scatterings)
+					if (100 == ph.scatterings)
 						det100[j][i] += res;
+
+					if (5000 == ph.scatterings)
+					    det5000[j][i] += res;
+
+					if (100000 == ph.scatterings)
+					    det100000[j][i] += res;
 
 					detall[j][i] += res;
 				}
@@ -258,6 +268,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 				fprintf(stderr, "%f\n", ph.fullIntegral);
 			}
 		}
+	
 	}
 }
 
@@ -268,17 +279,23 @@ void ScatMCApp::output()
 		 *det2file     = 0,
 		 *det5file     = 0,
 		 *det100file   = 0,
+		 *det5000file  = 0,
+		 *det100000file= 0,
 		 *detallfile   = 0;
 
 	det1file     = fopen("output/peak1.txt", "w");
 	det2file     = fopen("output/peak2.txt", "w");
 	det5file     = fopen("output/peak5.txt", "w");
 	det100file   = fopen("output/peak100.txt", "w");
+	det5000file   = fopen("output/peak5000.txt", "w");
+    det100000file   = fopen("output/peak100000.txt", "w");
+
+
 	detallfile   = fopen("output/peakall.txt", "w");
 
 	
 
-	Float thetaStep = M_PI / kThetaMax /*/ kThetaSize*/;
+	Float thetaStep = kThetaMax / kThetaSize;
 	Float phiStep   = 2*M_PI / kPhiSize;
 
 	for (int i = 0; i < kThetaSize; ++i)
@@ -291,6 +308,8 @@ void ScatMCApp::output()
 			fprintf(det2file,     "%e\t%e\t%.17e\n", theta, phi, det2[j][i]);
 			fprintf(det5file,     "%e\t%e\t%.17e\n", theta, phi, det5[j][i]);
 			fprintf(det100file,   "%e\t%e\t%.17e\n", theta, phi, det100[j][i]);
+			fprintf(det5000file,  "%e\t%e\t%.17e\n", theta, phi, det5000[j][i]);
+			fprintf(det100000file,  "%e\t%e\t%.17e\n", theta, phi, det100000[j][i]);
 			fprintf(detallfile,   "%e\t%e\t%.17e\n", theta, phi, detall[j][i]);
 			
 		}
@@ -299,6 +318,8 @@ void ScatMCApp::output()
 	fclose(det2file);
 	fclose(det5file);
 	fclose(det100file);
+	fclose(det5000file);
+	fclose(det100000file);
 	fclose(detallfile);
 }
 
