@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cmath>
 #include <memory.h>
+#include <string.h>
 
 #include "common.h"
 

@@ -39,7 +39,7 @@ bool Partition::create()
 	m_rectCount = 1;
 
 	m_cellIntegrals = allocate2dArray<Float>(kSize-1, kSize-1);
-	
+
 	createPartitionTree();
 	createRectsList();
 
@@ -49,7 +49,6 @@ bool Partition::create()
 Partition::~Partition()
 {
 	delete m_root;
-//	free2dArray(m_cellIntegrals);
 }
 
 void Partition::setData(Float** const data, const Float& cellSquare)
@@ -64,7 +63,6 @@ void Partition::setData(Float** const data, const Float& cellSquare)
 			m_cellIntegrals[j][i] = approxIntegral(GreedRect(i, j, i+1, j+1));
 			m_fullIntegral += m_cellIntegrals[j][i];
 		}
-			
 }
 
 void Partition::refine()
@@ -84,10 +82,10 @@ void Partition::refineNode(Node* node)
 
 			Float xSplitApproxIntegral = approxIntegral(node->rect.leftHalf()) +
 			                             approxIntegral(node->rect.rightHalf());
-											
+
 			Float ySplitApproxIntegral = approxIntegral(node->rect.topHalf()) +
 			                             approxIntegral(node->rect.bottomHalf());
- 
+
 			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
 			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
 
@@ -107,7 +105,7 @@ void Partition::refineNode(Node* node)
 
 			Float xSplitApproxIntegral = approxIntegral(node->rect.leftHalf()) +
 			                             approxIntegral(node->rect.rightHalf());
-											
+
 			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
 
 			if (xSplitError > rectMaxError) {
@@ -120,7 +118,7 @@ void Partition::refineNode(Node* node)
 
 			Float ySplitApproxIntegral = approxIntegral(node->rect.topHalf()) +
 			                             approxIntegral(node->rect.bottomHalf());
-											
+
 			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
 
 			if (ySplitError > rectMaxError) {
@@ -143,22 +141,22 @@ Float Partition::integral(const GreedRect& rect)
 	/*
 	//rough estimation
 	Float res;
-	
+
 	if (rect.canSplitX() && rect.canSplitY()) {
 
-		res = approxIntegral(rect.leftHalf().topHalf()) + 
-		      approxIntegral(rect.leftHalf().bottomHalf()) + 
-			  approxIntegral(rect.rightHalf().topHalf()) + 
+		res = approxIntegral(rect.leftHalf().topHalf()) +
+		      approxIntegral(rect.leftHalf().bottomHalf()) +
+			  approxIntegral(rect.rightHalf().topHalf()) +
               approxIntegral(rect.rightHalf().bottomHalf());
 	}
 	else {
-		
+
 		res = approxIntegral(rect);
 	}
 	*/
-	
+
 	Float res = 0.;
-	
+
 	for (int i = rect.x1; i < rect.x2; ++i)
 		for (int j = rect.y1; j < rect.y2; ++j)
 			res += m_cellIntegrals[j][i];
@@ -194,7 +192,7 @@ void Partition::createPartitionTree()
 		Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
 		Vector3 v3 = crossProduct(s_i, v2).normalize();
 
-		
+
 		//create matrix
 		Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
 
@@ -239,7 +237,7 @@ void Partition::processTreeNode(Node* node)
 
 		int  keys[4];
 		int  indeces[4];
-		Knot knots[4];	
+		Knot knots[4];
 
         keys[0] = node->rect.x1 + node->rect.y1*kSize; //tl
         keys[1] = node->rect.x2 + node->rect.y1*kSize; //tr
@@ -323,34 +321,33 @@ bool Partition::save(const std::string& name)
 
 	if (!file)
 		return false;
-	
+
 	//knots
 	{
 		KnotsVector::iterator i;
 
-		fprintf(file, "%lu\n", m_knots.size());
+		fprintf(file, "%lu\n", (long unsigned int)m_knots.size());
 
 		for (i = m_knots.begin(); i != m_knots.end(); ++i) {
-			
+
 			fprintf(file, "%.17e\t%.17e\n", (*i).x, (*i).y);
 		}
 	}
-	
+
 	//rects
 	{
 		RectsVector::iterator i;
 
-		fprintf(file, "%lu\n", m_rects.size());
+		fprintf(file, "%lu\n", (long unsigned int)m_rects.size());
 
 		for (i = m_rects.begin(); i != m_rects.end(); ++i) {
 
 			fprintf(file, "%d\t%d\t%d\t%d\n", (*i).tl, (*i).tr, (*i).bl, (*i).br);
 		}
 	}
-	
+
 
 	fclose(file);
 
 	return true;
 }
-
