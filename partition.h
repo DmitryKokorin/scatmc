@@ -27,13 +27,17 @@ public:
 	void refine();
 
 	static const Float kEpsilon;
-	static const int   kDegree = 10;           
-	static const int   kSize   = (1 << kDegree) + 1;    //1025x1025
+	static const int   kThetaDegree = 10;           
+	static const int   kThetaSize   = (1 << kThetaDegree) + 1;    //1025
+	static const int   kPhiDegree   = 8;                     
+	static const int   kPhiSize     = (1 << kPhiDegree) + 1;      //257
 
-	static const Float kXResolution;
-	static const Float kYResolution;
 
-	static const int kIterations = 1000;
+	static const Float kThetaResolution;
+	static const Float kPhiResolution;
+
+	static const int   kIterations = 2000;
+	static const Float kIterationStep; 
 	
 	int m_rectCount;
 

@@ -1,8 +1,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory.h>
-
-#include <map>
+//#include <map>
 
 #include "common.h"
 #include "optics.h"
@@ -15,10 +14,16 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
+//
+// theta - x
+// phi   - y
+//
 
 const Float Partition::kEpsilon = 0.03;
-const Float Partition::kXResolution = M_PI / Partition::kSize;
-const Float Partition::kYResolution = M_PI / Partition::kSize;
+const Float Partition::kThetaResolution = M_PI / Partition::kThetaSize;
+const Float Partition::kPhiResolution   = M_PI / Partition::kPhiSize;
+const Float Partition::kIterationStep   = 0.5*M_PI / Partition::kIterations;
+
 
 Partition::Partition() :
 	m_rectCount(0),
@@ -35,10 +40,10 @@ Partition::Partition() :
 
 bool Partition::create()
 {
-	m_root = new Node(GreedRect(0,0, kSize-1, kSize-1));
+	m_root = new Node(GreedRect(0,0, kThetaSize-1, kPhiSize-1));
 	m_rectCount = 1;
 
-	m_cellIntegrals = allocate2dArray<Float>(kSize-1, kSize-1);
+	m_cellIntegrals = allocate2dArray<Float>(kThetaSize-1, kPhiSize-1);
 
 	createPartitionTree();
 	createRectsList();
@@ -57,8 +62,8 @@ void Partition::setData(Float** const data, const Float& cellSquare)
 	m_cellSquare = cellSquare;
 	m_fullIntegral = 0.;
 
-	for (int i = 0; i < kSize-1; ++i)
-		for (int j = 0; j < kSize-1; ++j) {
+	for (int i = 0; i < kThetaSize-1; ++i)
+		for (int j = 0; j < kPhiSize-1; ++j) {
 
 			m_cellIntegrals[j][i] = approxIntegral(GreedRect(i, j, i+1, j+1));
 			m_fullIntegral += m_cellIntegrals[j][i];
@@ -138,23 +143,6 @@ void Partition::refineNode(Node* node)
 
 Float Partition::integral(const GreedRect& rect)
 {
-	/*
-	//rough estimation
-	Float res;
-
-	if (rect.canSplitX() && rect.canSplitY()) {
-
-		res = approxIntegral(rect.leftHalf().topHalf()) +
-		      approxIntegral(rect.leftHalf().bottomHalf()) +
-			  approxIntegral(rect.rightHalf().topHalf()) +
-              approxIntegral(rect.rightHalf().bottomHalf());
-	}
-	else {
-
-		res = approxIntegral(rect);
-	}
-	*/
-
 	Float res = 0.;
 
 	for (int i = rect.x1; i < rect.x2; ++i)
@@ -175,15 +163,15 @@ Float Partition::approxIntegral(const GreedRect& rect)
 
 void Partition::createPartitionTree()
 {
-	Float ** data = allocate2dArray<Float>(Partition::kSize, Partition::kSize);
+	Float ** data = allocate2dArray<Float>(Partition::kThetaSize, Partition::kPhiSize);
 
-	const Float phiStep   = Partition::kXResolution;
-	const Float thetaStep = Partition::kYResolution;
+	const Float phiStep   = Partition::kPhiResolution;
+	const Float thetaStep = Partition::kThetaResolution;
 
 	for (int k = 1; k < kIterations; ++k) { //don't refine partition in "k_i || n" case
 
 		//angle between k_i and director
-		Angle   a_i = Angle(k*thetaStep);
+		Angle   a_i = Angle(k*kIterationStep);
 
 		//here we construct some k_i, that has a_i angle to director
 		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
@@ -202,13 +190,16 @@ void Partition::createPartitionTree()
 		Indicatrix ind = Indicatrix(k_i, n_i);
 
 		//calculate array values
-		for (int i = 0; i < Partition::kSize; ++i) {
 
-			Float t = i*thetaStep;
+        Float t, p;
 
-			for (int j = 0; j < Partition::kSize; ++j) {
+		for (int i = 0; i < Partition::kThetaSize; ++i) {
 
-				Float p = j*phiStep;
+			t = i*thetaStep;
+
+			for (int j = 0; j < Partition::kPhiSize; ++j) {
+
+			    p = j*phiStep;
 
 				Vector3 s_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
 				Float val = ind(s_s)*sin(t);
@@ -216,7 +207,7 @@ void Partition::createPartitionTree()
 			}
 		}
 
-		setData(data, Partition::kXResolution * Partition::kYResolution);
+		setData(data, Partition::kThetaResolution * Partition::kPhiResolution);
 		refine();
 	}
 
@@ -239,15 +230,15 @@ void Partition::processTreeNode(Node* node)
 		int  indeces[4];
 		Knot knots[4];
 
-        keys[0] = node->rect.x1 + node->rect.y1*kSize; //tl
-        keys[1] = node->rect.x2 + node->rect.y1*kSize; //tr
-        keys[2] = node->rect.x1 + node->rect.y2*kSize; //bl
-        keys[3] = node->rect.x2 + node->rect.y2*kSize; //br
+        keys[0] = node->rect.x1 + node->rect.y1*kThetaSize; //tl
+        keys[1] = node->rect.x2 + node->rect.y1*kThetaSize; //tr
+        keys[2] = node->rect.x1 + node->rect.y2*kThetaSize; //bl
+        keys[3] = node->rect.x2 + node->rect.y2*kThetaSize; //br
 
-        Float x1 = node->rect.x1 * kXResolution;
-		Float x2 = node->rect.x2 * kXResolution;
-		Float y1 = node->rect.y1 * kYResolution;
-		Float y2 = node->rect.y2 * kYResolution;
+        Float x1 = node->rect.x1 * kThetaResolution;
+		Float x2 = node->rect.x2 * kThetaResolution;
+		Float y1 = node->rect.y1 * kPhiResolution;
+		Float y2 = node->rect.y2 * kPhiResolution;
 
 		knots[0] = Knot(x1, y1);
 		knots[1] = Knot(x2, y1);
