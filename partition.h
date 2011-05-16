@@ -1,6 +1,6 @@
-#ifndef PARTITION_P92OD9XA
+#ifndef _PARTITION_H_
 
-#define PARTITION_P92OD9XA
+#define _PARTITION_H_
 
 #include <list>
 #include <string>
@@ -22,6 +22,7 @@ public:
     bool save(const std::string& name);
 
     PartitionChunk* addChunk(const Float kMinAngle, const Float kMaxAngle, const int kIterations);
+    void addChunk(PartitionChunk *chunk);
     PartitionChunk* getChunk(const Float kAngle);
 
     inline size_t getMaxRectsCount() const { return m_maxRectsCount; }
@@ -39,4 +40,4 @@ private:
 };
 
 
-#endif /* end of include guard: PARTITION_P92OD9XA */
+#endif /* end of include guard: _PARTITION_H_ */

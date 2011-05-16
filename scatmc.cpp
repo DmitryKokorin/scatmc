@@ -49,7 +49,8 @@ ScatMCApp::ScatMCApp() :
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(10000),
-	m_minPhotonWeight(1e-6)
+	m_minPhotonWeight(1e-8),
+	m_chunkParams()
 {
 	memset(&det1,     0, sizeof(det1));
 	memset(&det2,     0, sizeof(det2));
@@ -151,6 +152,12 @@ int ScatMCApp::run()
 	if (0 != res)
 		return res;
 
+    int numChunks = 100;
+    Float chunkStep = 0.5*M_PI / numChunks;
+    for (int i = 1; i <= numChunks; ++i)
+        m_chunkParams.push_back(ChunkParam(i*chunkStep, 100));
+    
+
 	Partition p;
 	res = preparePartition(p);
 
@@ -179,7 +186,7 @@ int ScatMCApp::run()
 
 				ph.scatter();
 
-				if (0 == ph.scatterings % 100)
+				if (0 == ph.scatterings % 1000)
 				    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
 
 			}
@@ -416,19 +423,14 @@ int ScatMCApp::preparePartition(Partition& p)
 	else {
 
 		fprintf(stderr, "creating partition...\n");
-		//p.create();
-		p.addChunk(0., 0.025*M_PI, 100);
-		p.addChunk(0.025*M_PI, 0.05*M_PI, 100);
-		p.addChunk(0.05*M_PI, 0.075*M_PI, 100);
 
+        Float leftBorder = 0.;
+        ChunkParamsList::iterator i;
+        for (i = m_chunkParams.begin(); i != m_chunkParams.end(); ++i) {
 
-
-		p.addChunk(0.075*M_PI, 0.5*(0.5*M_PI - 0.075*M_PI), 500);
-		p.addChunk( 0.5*(0.5*M_PI - 0.075*M_PI), 0.5*M_PI - 0.075*M_PI, 500);
-
-       	p.addChunk(0.5*M_PI - 0.075*M_PI, 0.5*M_PI - 0.05*M_PI, 100);
-       	p.addChunk( 0.5*M_PI - 0.05*M_PI, 0.5*M_PI - 0.025*M_PI, 100);
-   		p.addChunk(0.5*M_PI - 0.025*M_PI, 0.5*M_PI - 0., 100);
+            p.addChunk(leftBorder, i->first, i->second);
+            leftBorder = i->first;
+        }
 
 	}
 

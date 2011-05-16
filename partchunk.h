@@ -28,7 +28,7 @@ public:
 
 	inline size_t getRectsCount() const { return m_rects.size(); }
 	inline size_t getKnotsCount() const { return m_knots.size(); }
-    inline bool  isAngleInRange(const Float angle) const { return angle >= m_minAngle && angle <= m_maxAngle;}
+    inline bool  isAngleInRange(const Float angle) const { return angle > m_minAngle && angle <= m_maxAngle;}
 
 	static const Float kEpsilon;
 	static const int   kThetaDegree = 10;           

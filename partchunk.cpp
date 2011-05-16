@@ -278,6 +278,9 @@ bool PartitionChunk::load(FILE *file)
 {
 	int res = 0;
 
+    res = fscanf(file, "%le", &m_minAngle);
+    res = fscanf(file, "%le", &m_maxAngle);
+
 	int knotsNumber;
 	res = fscanf(file, "%d", &knotsNumber);
 
@@ -291,22 +294,27 @@ bool PartitionChunk::load(FILE *file)
 
 	Rect::s_knots = &m_knots;
 
-	unsigned long int rectsNumber;
+	unsigned long int rectsNumber, i;
 
 	res = fscanf(file, "%lu", &rectsNumber);
 
-	for (unsigned long int i = 0; i < rectsNumber; ++i) {
+	for (i = 0; i < rectsNumber; ++i) {
 
 		int tl, tr, bl, br;
 		res = fscanf(file, "%d\t%d\t%d\t%d", &tl, &tr, &bl, &br);
 		m_rects.push_back(Rect(tl, tr, bl, br));
 	}
 
+    fprintf(stderr, "chunk loaded: %e -- %e\t%lu\n", m_minAngle, m_maxAngle, (unsigned long int)m_rects.size());
 	return true;
 }
 
 bool PartitionChunk::save(FILE *file)
 {
+    //angles
+    fprintf(file, "%.17e\n", m_minAngle);
+    fprintf(file, "%.17e\n", m_maxAngle);
+
 	//knots
 	{
 		KnotsVector::iterator i;

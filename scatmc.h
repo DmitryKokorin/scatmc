@@ -2,8 +2,14 @@
 #define _INDICATRIX_APP_H_
 
 #include <string>
+#include <utility>
+#include <list>
 
 #include "photon.h"
+
+//right region border and number of iterations for some partition chunk
+typedef std::pair<Float, size_t> ChunkParam;
+typedef std::list<ChunkParam> ChunkParamsList;
 
 class ScatMCApp
 {
@@ -56,7 +62,11 @@ private:
 	static const int   kPhiSize    = 32;
 	static const int   kThetaSize  = 50;
 
-	static const Float kThetaMax;
+	static const Float kThetaMax;  //max interested value, peak is supposed to be in [0, kThetaMAx]
+
+    ChunkParamsList    m_chunkParams;
+
+	
 
 	//TODO: list of arrays for detected intensity
 
