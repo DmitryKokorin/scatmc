@@ -8,6 +8,7 @@
 
 class ExtLength;
 class Partition;
+class PartitionChunk;
 
 typedef std::vector<Float> ValuesVector;
 
@@ -51,16 +52,16 @@ protected:
 	static Partition* s_partition;
 	Partition& partition;
 
+	PartitionChunk *m_chunk;
+
 	ValuesVector    m_knotValues;
 	ValuesVector    m_rectValues;
-
 	ValuesVector    m_knotEscValues;  //escape function values
 
+private:
 
-	static const int kThetaIterations = 1000;
-	static const int kPhiIterations   = 1000;
-
-	static Float probs[kThetaIterations*kPhiIterations];
+    Photon(const Photon&);
+    Photon& operator=(const Photon&);
 };
 
 

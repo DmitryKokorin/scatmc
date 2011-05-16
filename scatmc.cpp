@@ -416,7 +416,20 @@ int ScatMCApp::preparePartition(Partition& p)
 	else {
 
 		fprintf(stderr, "creating partition...\n");
-		p.create();
+		//p.create();
+		p.addChunk(0., 0.025*M_PI, 100);
+		p.addChunk(0.025*M_PI, 0.05*M_PI, 100);
+		p.addChunk(0.05*M_PI, 0.075*M_PI, 100);
+
+
+
+		p.addChunk(0.075*M_PI, 0.5*(0.5*M_PI - 0.075*M_PI), 500);
+		p.addChunk( 0.5*(0.5*M_PI - 0.075*M_PI), 0.5*M_PI - 0.075*M_PI, 500);
+
+       	p.addChunk(0.5*M_PI - 0.075*M_PI, 0.5*M_PI - 0.05*M_PI, 100);
+       	p.addChunk( 0.5*M_PI - 0.05*M_PI, 0.5*M_PI - 0.025*M_PI, 100);
+   		p.addChunk(0.5*M_PI - 0.025*M_PI, 0.5*M_PI - 0., 100);
+
 	}
 
 	if (isSavePartition()) {

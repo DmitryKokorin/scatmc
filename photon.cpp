@@ -3,14 +3,14 @@
 #include "freepath.h"
 #include "indicatrix.h"
 #include "partition.h"
+#include "partchunk.h"
 #include "optics.h"
 #include "coords.h"
 #include "photon.h"
 
 
-Float Photon::probs[kThetaIterations*kPhiIterations] = {0};
 FreePath* Photon::s_length        = NULL;
-Partition* Photon::s_partition    = NULL;
+Partition* Photon::s_partition   = NULL;
 
 
 using namespace std::tr1;
@@ -45,14 +45,14 @@ Photon::Photon() :
 	fullEscIntegral(0.),
 	length(*s_length),
 	partition(*s_partition),
+	m_chunk(NULL),
 	m_knotValues(),
 	m_rectValues(),
 	m_knotEscValues()
 {
-	m_knotValues.reserve(s_partition->m_knots.size());
-	m_rectValues.reserve(s_partition->m_rects.size());
-
-	m_knotEscValues.reserve(s_partition->m_knots.size());
+	m_knotValues.reserve(s_partition->getMaxKnotsCount());
+	m_rectValues.reserve(s_partition->getMaxRectsCount());
+	m_knotEscValues.reserve(s_partition->getMaxKnotsCount());
 }
 
 
@@ -77,10 +77,14 @@ void Photon::scatter()
 {
 	//coordinate system
 	Vector3 v2;
+	Vector3 nn = Optics::n;
 
-	if (fabs(Angle(s_i, Optics::n).sintheta) > kMachineEpsilon) {
+	if (Angle(s_i, nn).costheta < 0)
+	    nn = -nn;
 
-		v2 = crossProduct(s_i, Optics::n).normalize();
+	if (fabs(Angle(s_i, nn).sintheta) > kMachineEpsilon) {
+
+		v2 = crossProduct(s_i, nn).normalize();
 	}
 	else {
 
@@ -92,17 +96,18 @@ void Photon::scatter()
 
 	Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
 
-	Vector3 nn = mtx*Optics::n;            //director in k_i based coordinate system
-	Vector3 oz = mtx*Vector3(0., 0., 1.);  //z axis in k_i based coordinate system
+	nn = mtx*nn;                            //director in k_i based coordinate system
+	Vector3 oz = mtx*Vector3(0., 0., 1.);   //z axis in k_i based coordinate system
 
 	Angle a_i = Angle(v1, nn);
 	Vector3 k_i = Optics::ke(v1, a_i);
 
 	Indicatrix ind = Indicatrix(v1, nn);
+	m_chunk = partition.getChunk(a_i.theta);
 
 	//compute integrals
 	{
-		KnotsVector& knots = partition.m_knots;
+		KnotsVector& knots = m_chunk->m_knots;
 		KnotsVector::iterator k;
 
 		m_knotValues.clear();
@@ -135,7 +140,7 @@ void Photon::scatter()
 		}
 	}
 
-	RectsVector& rects = partition.m_rects;
+	RectsVector& rects = m_chunk->m_rects;
 
 	{
 		RectsVector::iterator i;
@@ -235,7 +240,7 @@ void Photon::scatter()
 void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Float randX, const Float randY)
 {
 
-	Rect& rect = partition.m_rects[rectNum];
+	Rect& rect = m_chunk->m_rects[rectNum];
 
 
 	Float b1 = m_knotValues[rect.tl];
@@ -282,6 +287,6 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 	x *= rect.width;
 	y *= rect.height;
 
-	x += partition.m_knots[rect.tl].x;
-	y += partition.m_knots[rect.tl].y;
+	x += m_chunk->m_knots[rect.tl].x;
+	y += m_chunk->m_knots[rect.tl].y;
 }

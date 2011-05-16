@@ -12,9 +12,6 @@
 
 extern const Float kMachineEpsilon;
 
-#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-
 
 template < typename T >
 T **allocate2dArray( int rows, int cols)

@@ -73,5 +73,13 @@ Float Indicatrix::operator()(const Vector3& s_s)
 	       (eeia2*eeia2*een_s*een_s + 2.*eeia2*een_s*een_i*eea2 + eea2*eea2*een_i*een_i) / 
 	           (Optics::t2*qeeperp*qeeperp + qeepar*qeepar + Optics::add);
 
+#if 0
+	res = (/*eeia1*eeia1**/een_s*een_s/* + 2.*eeia1*een_s*een_i*eea1 + eea1*eea1*een_i*een_i*/) /* /
+		       (Optics::t1*qeeperp*qeeperp + qeepar*qeepar + Optics::add)*/;
+
+#endif
+
+//    res = eeia2;
+
 	return res;
 }

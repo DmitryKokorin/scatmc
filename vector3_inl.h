@@ -117,6 +117,11 @@ Vector3 operator*(const Float& lhv, const Vector3& rhv)
 	return rhv*lhv;
 }
 
+Vector3 operator-(const Vector3& v)
+{
+    return -1.*v;
+}
+
 Vector3 crossProduct(const Vector3& lhv, const Vector3& rhv)
 {
 	return Vector3((lhv.y()*rhv.z() - lhv.z()*rhv.y()),

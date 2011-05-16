@@ -6,21 +6,18 @@
 
 struct Knot
 {
-	Knot(const Float x_, const Float y_/*, const Float val_*/) :
+	Knot(const Float x_, const Float y_) :
 		x(x_),
-		y(y_)/*,
-		val(val_)*/
+		y(y_)
 	{};
 
 	Knot() :
 		x(0.),
-		y(0.)/*,
-		val(0.)*/
+		y(0.)
 	{};
 
 	Float x;
 	Float y;
-//	Float val;
 };
 
 struct Rect
@@ -38,22 +35,7 @@ struct Rect
 			
 	Float	square;
 
-//	Float   val;
-
-	
-//	inline 	Float	integral();
-
-	
 	static std::vector<Knot>	*s_knots;
 };
-/*
-inline Float Rect::integral()
-{
-	return 0.25*square*((*s_knots)[tl].val +
-						(*s_knots)[tr].val +
-						(*s_knots)[bl].val +
-						(*s_knots)[br].val);
-}
-*/
 
 #endif /* _RECT_H_ */

@@ -37,6 +37,7 @@ private:
 };
 
 inline Vector3 operator*(const Float& lhv, const Vector3& rhv);
+inline Vector3 operator-(const Vector3& v);
 inline Vector3 crossProduct(const Vector3& lhv, const Vector3& rhv);
 
 

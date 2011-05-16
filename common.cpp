@@ -1,6 +1,7 @@
 #include "common.h"
-#include "cmath"
+#include <cmath>
 #include <cstdio>
+#include <algorithm>
 
 #if defined DOUBLE_PRECISION
 const Float kMachineEpsilon = 1e-17;
@@ -12,9 +13,7 @@ const Float kMachineEpsilon = 1e-6;
 
 int solveQuadric(const Float a, const Float b, const Float c, Float& x1, Float& x2)
 {
-//	fprintf(stderr, "a=%f\tb=%f\tc=%f\n", a, b, c);
-
-	Float max = MAX(fabs(a), MAX(fabs(b), fabs(c)));
+	Float max = std::max(fabs(a), std::max(fabs(b), fabs(c)));
 
 	if (max == 0)
 		return 0;
@@ -51,8 +50,6 @@ int solveQuadric(const Float a, const Float b, const Float c, Float& x1, Float& 
 
 	x1 = 0.5*(-B - discrSqrt)/A;
 	x2 = 0.5*(-B + discrSqrt)/A;
-
-//	fprintf(stderr, "x1=%f\tx2=%f\n", x1, x2);
 
 	return 2;
 }
