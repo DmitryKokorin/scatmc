@@ -152,7 +152,7 @@ int ScatMCApp::run()
 	if (0 != res)
 		return res;
 
-    int numChunks = 100;
+    int numChunks = 10;
     Float chunkStep = 0.5*M_PI / numChunks;
     for (int i = 1; i <= numChunks; ++i)
         m_chunkParams.push_back(ChunkParam(i*chunkStep, 100));

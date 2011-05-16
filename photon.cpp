@@ -140,6 +140,31 @@ void Photon::scatter()
 		}
 	}
 
+#if 1
+
+    Float esc = 0;
+
+    {
+        Indicatrix ind1 = Indicatrix(s_i, Optics::n);
+        Float phi, theta, dist;
+       
+        for (int i = 0; i < 1000; ++i) {
+
+            phi = 2.*M_PI/1000 * i;
+
+            for (int j = 0; j < 1000; ++j) {
+
+                theta = M_PI/1000 * j;
+                dist = pos.z() /  cos(theta);
+                Vector3 s1 = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
+                esc += ind1(s1)*sin(theta);
+            }
+        }
+
+        esc *= 2.*M_PI * M_PI / 1000 / 1000;
+    }
+#endif
+
 	RectsVector& rects = m_chunk->m_rects;
 
 	{
@@ -169,7 +194,7 @@ void Photon::scatter()
 		}
 	}
 
-
+    fprintf(stderr, "esc=%.17e\tapprox=%.17e\t%.17e\n", esc, fullIntegral, esc/fullIntegral);
     //calc weight
     weight *= 1. - fullEscIntegral/fullIntegral;
 

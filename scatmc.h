@@ -11,6 +11,9 @@
 typedef std::pair<Float, size_t> ChunkParam;
 typedef std::list<ChunkParam> ChunkParamsList;
 
+//typedef Float[ScatMCApp::kPhiSize][ScatMCApp::kThetaSize]  ResultArray;
+//typedef std::list<ResultArray> ResultsList;
+
 class ScatMCApp
 {
 public:
@@ -20,6 +23,10 @@ public:
 	int  run();
 	bool getOpts(int argc, char ** argv);
 	void printHelp();
+
+	static const int   kPhiSize    = 32;
+	static const int   kThetaSize  = 50;
+	static const Float kThetaMax;  //max interested value, peak is supposed to be in [0, kThetaMAx]
 
 
 private:
@@ -59,10 +66,7 @@ private:
 
 	Float m_minPhotonWeight;
 
-	static const int   kPhiSize    = 32;
-	static const int   kThetaSize  = 50;
 
-	static const Float kThetaMax;  //max interested value, peak is supposed to be in [0, kThetaMAx]
 
     ChunkParamsList    m_chunkParams;
 
