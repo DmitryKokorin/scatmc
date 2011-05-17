@@ -9,6 +9,7 @@
 class ExtLength;
 class Partition;
 class PartitionChunk;
+class EscFunction;
 
 typedef std::vector<Float> ValuesVector;
 
@@ -19,7 +20,8 @@ class Photon
 public:
 
 	Photon();
-    static void init(FreePath* length, Partition* partition, unsigned long seed = 1000);
+    static void init(FreePath* length, Partition* partition, EscFunction* escFunction,
+            unsigned long seed = 1000);
 
 	void move();
 	void scatter();
@@ -44,19 +46,20 @@ protected:
 	// have to use this due to 40263 gcc bug in uniform_real realization
 	static std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng;
 
-
-	//these two are to simulate static behaviour for a reference (without ugly pointer syntax)
 	static FreePath* s_length;
-	FreePath& length;
-
 	static Partition* s_partition;
+	static EscFunction* s_escFunction;
+
+    //these are to simulate static behaviour for a reference (without ugly pointer syntax)
+	FreePath& length;
 	Partition& partition;
+	EscFunction& escFunction;
+
 
 	PartitionChunk *m_chunk;
 
 	ValuesVector    m_knotValues;
 	ValuesVector    m_rectValues;
-	ValuesVector    m_knotEscValues;  //escape function values
 
 private:
 

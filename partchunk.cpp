@@ -18,7 +18,7 @@
 // phi   - y
 //
 
-const Float PartitionChunk::kEpsilon = 0.03;
+const Float PartitionChunk::kEpsilon = 0.01;
 const Float PartitionChunk::kThetaResolution = M_PI / PartitionChunk::kThetaSize;
 const Float PartitionChunk::kPhiResolution   = M_PI / PartitionChunk::kPhiSize;
 
@@ -33,7 +33,6 @@ PartitionChunk::PartitionChunk() :
 	m_root(NULL),
 	m_data(NULL),
 	m_cellIntegrals(NULL),
-//	m_rectCount(0),
 	m_knotsMap(),
 	m_cellSquare(0.),
 	m_fullIntegral(0.)
@@ -50,7 +49,6 @@ bool PartitionChunk::create(const Float minAngle, const Float maxAngle, const in
 
 
 	m_root = new Node(GreedRect(0,0, kThetaSize-1, kPhiSize-1));
-	//m_rectCount = 1;
 
 	m_cellIntegrals = allocate2dArray<Float>(kThetaSize-1, kPhiSize-1);
 
@@ -90,7 +88,6 @@ void PartitionChunk::refineNode(Node* node)
 
 		Float nodeIntegral    = integral(node->rect);
 		Float rectMaxError    = nodeIntegral*kEpsilon;
-		//Float rectMaxError    = std::max(nodeIntegral*kEpsilon, kEpsilon*m_fullIntegral*((Float)(node->rect.square)/m_root->rect.square));
 
 		if (node->rect.canSplitX() && node->rect.canSplitY()) {
 
@@ -107,12 +104,10 @@ void PartitionChunk::refineNode(Node* node)
 			if ((xSplitError > rectMaxError) && (xSplitError >= ySplitError)) {
 
 				node->splitX();
-				//++m_rectCount;
 			}
 			else if ((ySplitError > rectMaxError) && (ySplitError > xSplitError)) {
 
 				node->splitY();
-				//++m_rectCount;
 			}
 		}
 		else if (node->rect.canSplitX()) {
@@ -125,7 +120,6 @@ void PartitionChunk::refineNode(Node* node)
 			if (xSplitError > rectMaxError) {
 
 				node->splitX();
-				//++m_rectCount;
 			}
 		}
 		else if (node->rect.canSplitY()) {
@@ -138,7 +132,6 @@ void PartitionChunk::refineNode(Node* node)
 			if (ySplitError > rectMaxError) {
 
 				node->splitY();
-				//++m_rectCount;
 			}
 		}
 	}
@@ -188,12 +181,12 @@ void PartitionChunk::createPartitionTree()
 
 
 		//create matrix
-		Matrix3 mtx = createTransformMatrix(s_i, v2, v3);
+		Matrix3 mtx = createTransformMatrix(v2, v3, s_i);
 
-		Vector3 n_i = mtx*Optics::n;
-		Vector3 k_i = Vector3(1., 0., 0.)*Optics::ne(a_i);
+		Vector3 nn = mtx*Optics::n;
+		Vector3 ss_i = Vector3(0., 0., 1.);
 
-		Indicatrix ind = Indicatrix(k_i, n_i);
+		Indicatrix ind = Indicatrix(ss_i, nn);
 
 		//calculate array values
 
@@ -207,11 +200,8 @@ void PartitionChunk::createPartitionTree()
 
 			    p = j*kPhiResolution;
 
-				Vector3 s_s = Vector3(cos(t), sin(t)*sin(p), sin(t)*cos(p));
-				data[j][i]  = ind(s_s)*sin(t);
-                
-                //if (k == 998)
-				//    printf("%f\t%f\t%.12e\n", t, p, data[j][i]);
+				Vector3 ss_s = Vector3(sin(t)*cos(p), sin(t)*sin(p), cos(t));
+				data[j][i]  = ind(ss_s)*sin(t);
 			}
 		}
 

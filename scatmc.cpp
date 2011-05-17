@@ -6,9 +6,10 @@
 #include "common.h"
 
 #include "freepath.h"
+#include "partition.h"
+#include "escfunction.h"
 #include "photon.h"
 #include "indicatrix.h"
-#include "partition.h"
 #include "optics.h"
 
 #include "scatmc.h"
@@ -38,14 +39,17 @@ const Float ScatMCApp::kThetaMax = 1e-4;
 
 
 ScatMCApp::ScatMCApp() :
-	m_length(),
 	m_executableFileName(),
 	m_freePathFileName(),
 	m_partitionFileName(),
+	m_escFunctionFileName(),
 	m_loadFreePath(false),
 	m_saveFreePath(false),
 	m_loadPartition(false),
 	m_savePartition(false),
+	m_loadEscFunction(false),
+	m_saveEscFunction(false),
+	m_length(),
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(10000),
@@ -98,6 +102,17 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadPartition     = true;
 			m_partitionFileName = argv[i];
 		}
+		else if (!strcmp(argv[i], "--loadescfunction")) {
+
+			if (m_saveEscFunction)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadEscFunction     = true;
+			m_escFunctionFileName = argv[i];
+		}
 		else if (!strcmp(argv[i], "--savefreepath")) {
 
 			if (m_loadFreePath)
@@ -106,7 +121,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			if (++i == argc)
 				return false;
 
-			m_saveFreePath    = true;
+			m_saveFreePath     = true;
 			m_freePathFileName = argv[i];
 
 		}
@@ -120,6 +135,17 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 			m_savePartition     = true;
 			m_partitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--saveescfunction")) {
+
+			if (m_loadEscFunction)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveEscFunction     = true;
+			m_escFunctionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--photons")) {
 
@@ -147,25 +173,40 @@ int ScatMCApp::run()
 {
 	int res = 0;
 
+    //free path
 	res = prepareFreePath(m_length);
 
 	if (0 != res)
 		return res;
 
-    int numChunks = 10;
+    //partition
+    int numChunks = 100;
     Float chunkStep = 0.5*M_PI / numChunks;
+
     for (int i = 1; i <= numChunks; ++i)
         m_chunkParams.push_back(ChunkParam(i*chunkStep, 100));
     
-
 	Partition p;
 	res = preparePartition(p);
 
 	if (0 != res)
 		return res;
 
+	//escape function
+	
+    EscFunction escFunction;
+    res = prepareEscFunction(escFunction);
+
+    if (0 != res)
+        return res;
+
+
+
 	fprintf(stderr, "scattering...\n");
-	Photon::init(&m_length, &p, getSeed());
+	Photon::init(&m_length, &p, &escFunction, getSeed());
+
+
+    //main loop
 
 	int cnt = 0;
 	bool ready = false;
@@ -357,8 +398,10 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
 	fprintf(stderr, "\n--loadfreepath [filename]\t\tload extinction lengths from file");
 	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
+	fprintf(stderr, "\n--loadescfunction [filename]\t\tload escape function from file");
 	fprintf(stderr, "\n--savefreepath [filename]\t\tsave extinction lengths to file");
 	fprintf(stderr, "\n--savepartition [filename]\t\tsave partition to file");
+	fprintf(stderr, "\n--saveescfunction [filename]\t\tsave escape function to file");
 	fprintf(stderr, "\n--photons [photons]\t\t\tnumber of photons to scatter");
 	fprintf(stderr, "\n--scatterings [scatterings]\t\tmax scatterings for each photon");
 	fprintf(stderr, "\n");
@@ -441,6 +484,48 @@ int ScatMCApp::preparePartition(Partition& p)
 		if (!p.save(getPartitionFileName())) {
 
 			fprintf(stderr, "can't save partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+
+int ScatMCApp::prepareEscFunction(EscFunction& esc)
+{
+	if (isLoadEscFunction()) {
+
+		fprintf(stderr, "loading escape function...");
+
+		if (!esc.load(getEscFunctionFileName())) {
+
+			fprintf(stderr, "can't load escape function\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "creating escape function...\n");
+
+        esc.create(m_length, 360, 360, 300, 15*40);
+	}
+
+	if (isSavePartition()) {
+
+		fprintf(stderr, "saving escape function...");
+
+		if (!esc.save(getEscFunctionFileName())) {
+
+			fprintf(stderr, "can't save escape function\n");
 			return -1;
 		}
 		else {

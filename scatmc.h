@@ -5,14 +5,12 @@
 #include <utility>
 #include <list>
 
-#include "photon.h"
 
 //right region border and number of iterations for some partition chunk
 typedef std::pair<Float, size_t> ChunkParam;
 typedef std::list<ChunkParam> ChunkParamsList;
 
-//typedef Float[ScatMCApp::kPhiSize][ScatMCApp::kThetaSize]  ResultArray;
-//typedef std::list<ResultArray> ResultsList;
+
 
 class ScatMCApp
 {
@@ -37,39 +35,44 @@ private:
 	bool isSaveFreePath() const {return m_saveFreePath;}
 	bool isLoadPartition() const {return m_loadPartition;}
 	bool isSavePartition() const {return m_savePartition;}
+	bool isLoadEscFunction() const {return m_loadEscFunction;}
+	bool isSaveEscFunction() const {return m_saveEscFunction;}
+
 
 	const std::string& getFreePathFileName() const {return m_freePathFileName;}
 	const std::string& getPartitionFileName() const {return m_partitionFileName;}
+	const std::string& getEscFunctionFileName() const {return m_escFunctionFileName;}
+
+
 
 	int  prepareFreePath(FreePath& length);
 	int  preparePartition(Partition& partition);
-
+    int  prepareEscFunction(EscFunction& escFunction);
 
 	void processScattering(const Photon& ph);
 	void output();
 	bool checkResultsReady();
 
-	FreePath m_length;
-
 	std::string m_executableFileName;
 	std::string m_freePathFileName;
 	std::string m_partitionFileName;
+    std::string m_escFunctionFileName;
 
 	bool m_loadFreePath;
 	bool m_saveFreePath;
 	bool m_loadPartition;
 	bool m_savePartition;
+	bool m_loadEscFunction;
+	bool m_saveEscFunction;
+
+	FreePath m_length;
 
 	int m_seed;
 	int m_maxPhotons;
 	int m_maxScatterings;
-
 	Float m_minPhotonWeight;
 
-
-
     ChunkParamsList    m_chunkParams;
-
 	
 
 	//TODO: list of arrays for detected intensity
