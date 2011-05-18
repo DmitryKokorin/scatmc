@@ -13,12 +13,12 @@ public:
     ~EscFunction();
 
     bool create(const FreePath& lengths,
-                const int thetaSize,
-                const int phiSize,
-                const int zSize,
+                const ULong thetaSize,
+                const ULong phiSize,
+                const ULong zSize,
                 const Float maxZ,
-                const int thetaIterations = 1000,
-                const int phiIterations = 1000);
+                const ULong thetaIterations = 1000,
+                const ULong phiIterations = 1000);
 
     Float operator()(const Float theta, const Float phi, const Float z) const;
 
@@ -32,9 +32,9 @@ private:
 
     Float m_maxZ;
 
-    size_t m_thetaSize;
-    size_t m_phiSize;
-    size_t m_zSize;
+    ULong m_thetaSize;
+    ULong m_phiSize;
+    ULong m_zSize;
 
     Float m_thetaStep;
     Float m_phiStep;

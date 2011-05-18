@@ -26,12 +26,12 @@ EscFunction::~EscFunction()
 }
 
 bool EscFunction::create(const FreePath& length,
-                         const int thetaSize,
-                         const int phiSize,
-                         const int zSize,
+                         const ULong thetaSize,
+                         const ULong phiSize,
+                         const ULong zSize,
                          const Float maxZ,
-                         const int thetaIterations /*= 1000*/,
-                         const int phiIterations /*= 1000*/)
+                         const ULong thetaIterations /*= 1000*/,
+                         const ULong phiIterations /*= 1000*/)
 {
     m_array = allocate3dArray<Float>(zSize, phiSize, thetaSize);
 
@@ -47,20 +47,20 @@ bool EscFunction::create(const FreePath& length,
     const Float kThetaIterStep = M_PI / thetaIterations;
     const Float kPhiIterStep = 2.*M_PI / phiIterations;
 
-    for (int i = 0; i < thetaSize; ++i) {
+    for (ULong i = 0; i < thetaSize; ++i) {
 
         Float t_i = i*m_thetaStep;
         Float cost_i = cos(t_i);
         Float sint_i = sin(t_i);
 
-        for (int j = 0; j < phiSize; ++j) {
+        for (ULong j = 0; j < phiSize; ++j) {
 
             Float p_i = j*m_phiStep;
 
             Vector3 s_i = Vector3(sint_i*cos(p_i), sint_i*sin(p_i), cost_i);
             Indicatrix ind = Indicatrix(s_i, Optics::n);
 
-            for (int k = 0; k < zSize; ++k) {
+            for (ULong k = 0; k < zSize; ++k) {
 
                 Float z = k*m_zStep;
 
@@ -68,13 +68,13 @@ bool EscFunction::create(const FreePath& length,
                 Float res = 0.;
                 Float norm = 0.;
 
-                for (int l = 0; l < thetaIterations; ++l) {
+                for (ULong l = 0; l < thetaIterations; ++l) {
 
                     Float t_s = l*kThetaIterStep;
                     Float cost_s = cos(t_s);
                     Float sint_s = sin(t_s);
 
-                    for (int m = 0; m < phiIterations; ++m) {
+                    for (ULong m = 0; m < phiIterations; ++m) {
 
                         Float p_s = m*kPhiIterStep;
                         Vector3 s_s = Vector3(sint_s*cos(p_s), sint_s*sin(p_s), cost_s);
@@ -91,7 +91,7 @@ bool EscFunction::create(const FreePath& length,
                 }
 
                 m_array[k][j][i] = res;
-                fprintf(stderr, "%d\t%d\t%d\n", i, j, k);
+//                fprintf(stderr, "%d\t%d\t%d\n", i, j, k);
             }
         }
     }
@@ -133,6 +133,10 @@ bool EscFunction::save(const std::string& name)
     FILE *file = fopen(name.c_str(), "w");
     if (!file)
         return false;
+
+    fprintf(file, "%lu %lu %lu %.17e", m_thetaSize,
+             m_phiSize, m_zSize, m_maxZ);
+
 
     for (size_t i = 0; i < m_thetaSize; ++i)
         for (size_t j = 0; j < m_phiSize; ++j)

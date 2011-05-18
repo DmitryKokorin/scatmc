@@ -10,6 +10,8 @@
 #define Float float
 #endif
 
+typedef unsigned long int ULong;
+
 extern const Float kMachineEpsilon;
 
 //[y][x], x -- width, y -- height
