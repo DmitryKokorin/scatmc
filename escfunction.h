@@ -28,7 +28,14 @@ public:
 
 private:
 
+    void recalcSteps();
+
     Float m_maxZ;
+
+    size_t m_thetaSize;
+    size_t m_phiSize;
+    size_t m_zSize;
+
     Float m_thetaStep;
     Float m_phiStep;
     Float m_zStep;

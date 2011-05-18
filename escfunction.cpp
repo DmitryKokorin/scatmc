@@ -10,6 +10,9 @@
 
 EscFunction::EscFunction() :
     m_maxZ(0.),
+    m_thetaSize(0),
+    m_phiSize(0),
+    m_zSize(0),
     m_thetaStep(0.),
     m_phiStep(0.),
     m_zStep(0.),
@@ -19,7 +22,7 @@ EscFunction::EscFunction() :
 
 EscFunction::~EscFunction()
 {
-    free3dArray(m_array);
+//    free3dArray(m_array);
 }
 
 bool EscFunction::create(const FreePath& length,
@@ -32,13 +35,17 @@ bool EscFunction::create(const FreePath& length,
 {
     m_array = allocate3dArray<Float>(zSize, phiSize, thetaSize);
 
-    m_maxZ = maxZ;
-    m_thetaStep = M_PI / thetaSize;
-    m_phiStep = 2*M_PI / phiSize;
-    m_zStep = maxZ / zSize;
+    fprintf(stderr, "calculating escape function\n");
 
-    const Float kThetaIterStep = 0.5*M_PI / thetaIterations;
-    const Float kPhiIterStep = M_PI / phiIterations;
+    m_maxZ      = maxZ;
+    m_thetaSize = thetaSize;
+    m_phiSize   = phiSize;
+    m_zSize     = zSize;
+
+    recalcSteps();
+
+    const Float kThetaIterStep = M_PI / thetaIterations;
+    const Float kPhiIterStep = 2.*M_PI / phiIterations;
 
     for (int i = 0; i < thetaSize; ++i) {
 
@@ -58,11 +65,12 @@ bool EscFunction::create(const FreePath& length,
                 Float z = k*m_zStep;
 
                 //double integration
-                Float res = 0;
+                Float res = 0.;
+                Float norm = 0.;
 
-                for (int l = 1; l < thetaIterations; ++l) { //skip t_s == 0
+                for (int l = 0; l < thetaIterations; ++l) {
 
-                    Float t_s = 0.5*M_PI + l*kThetaIterStep;
+                    Float t_s = l*kThetaIterStep;
                     Float cost_s = cos(t_s);
                     Float sint_s = sin(t_s);
 
@@ -71,10 +79,19 @@ bool EscFunction::create(const FreePath& length,
                         Float p_s = m*kPhiIterStep;
                         Vector3 s_s = Vector3(sint_s*cos(p_s), sint_s*sin(p_s), cost_s);
 
-                        Float dist = z / s_s.z();
-                        res += ind(s_s)*sint_s*exp(dist/length(Angle(s_s, Optics::n)));
+                        Float tmp = ind(s_s)*sint_s;
+                        norm += tmp;
+
+                        if (cost_s < -kMachineEpsilon) {
+
+                            Float dist = z / cost_s;
+                            res += tmp*exp(dist/length(Angle(s_s, Optics::n)));
+                        }
                     }
                 }
+
+                m_array[k][j][i] = res;
+                fprintf(stderr, "%d\t%d\t%d\n", i, j, k);
             }
         }
     }
@@ -96,6 +113,16 @@ bool EscFunction::load(const std::string& name)
     if (!file)
         return false;
 
+    int res = 0;
+
+    res = fscanf(file, "%lu %lu %lu %lf", &m_thetaSize, &m_phiSize, &m_zSize, &m_maxZ);
+    recalcSteps();
+
+    for (size_t i = 0; i < m_thetaSize; ++i)
+        for (size_t j = 0; j < m_phiSize; ++j)
+            for (size_t k = 0; k < m_zSize; ++k)
+                res = fscanf(file, "%lf", &m_array[k][j][i]);
+
     fclose(file);
 
     return true;
@@ -107,9 +134,22 @@ bool EscFunction::save(const std::string& name)
     if (!file)
         return false;
 
+    for (size_t i = 0; i < m_thetaSize; ++i)
+        for (size_t j = 0; j < m_phiSize; ++j)
+            for (size_t k = 0; k < m_zSize; ++k)
+                fprintf(file, "%.17e\n", m_array[k][j][i]);
+
+
     fclose(file);
 
     return true;
+}
+
+void EscFunction::recalcSteps()
+{
+    m_thetaStep = M_PI / m_thetaSize;
+    m_phiStep = 2*M_PI / m_phiSize;
+    m_zStep = m_maxZ / m_zSize;
 }
 
 

@@ -33,7 +33,6 @@ public:
 	int scatterings;
 	Float weight;
 	Float fullIntegral;
-	Float fullEscIntegral;
 
 protected:
 

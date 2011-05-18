@@ -46,7 +46,6 @@ Photon::Photon() :
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
-	fullEscIntegral(0.),
 	length(*s_length),
 	partition(*s_partition),
 	escFunction(*s_escFunction),
@@ -160,7 +159,6 @@ void Photon::scatter()
 	{
 		RectsVector::iterator i;
 		fullIntegral = 0.;
-		fullEscIntegral = 0.;
 
 		m_rectValues.clear();
 
