@@ -47,12 +47,8 @@ bool EscFunction::create(const FreePath& length,
     const Float kThetaIterStep = M_PI / thetaIterations;
     const Float kPhiIterStep = 2.*M_PI / phiIterations;
 
-<<<<<<< HEAD
-    for (ULong i = 0; i < thetaSize; ++i) {
-=======
     #pragma omp parallel for
-    for (int i = 0; i < thetaSize; ++i) {
->>>>>>> f505dd206c9d6e3e9dfe26496647df2e2eb109cf
+    for (ULong i = 0; i < thetaSize; ++i) {
 
         Float t_i = i*m_thetaStep;
         Float cost_i = cos(t_i);
@@ -95,15 +91,10 @@ bool EscFunction::create(const FreePath& length,
                     }
                 }
 
-<<<<<<< HEAD
-                m_array[k][j][i] = res;
-//                fprintf(stderr, "%d\t%d\t%d\n", i, j, k);
-=======
                 m_array[k][j][i] = res / norm;
->>>>>>> f505dd206c9d6e3e9dfe26496647df2e2eb109cf
             }
 
-            fprintf(stderr, "%d\t%d\n", i, j);
+            fprintf(stderr, "%lu\t%lu\n", i, j);
         }
     }
 
@@ -166,7 +157,3 @@ void EscFunction::recalcSteps()
     m_phiStep = 2*M_PI / m_phiSize;
     m_zStep = m_maxZ / m_zSize;
 }
-
-
-
-
