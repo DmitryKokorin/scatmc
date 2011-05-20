@@ -17,8 +17,8 @@ public:
                 const int phiSize,
                 const int zSize,
                 const Float maxZ,
-                const int thetaIterations = 1000,
-                const int phiIterations = 1000);
+                const int thetaIterations = 360,
+                const int phiIterations = 360);
 
     Float operator()(const Float theta, const Float phi, const Float z) const;
 

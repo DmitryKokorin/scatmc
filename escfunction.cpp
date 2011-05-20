@@ -47,6 +47,7 @@ bool EscFunction::create(const FreePath& length,
     const Float kThetaIterStep = M_PI / thetaIterations;
     const Float kPhiIterStep = 2.*M_PI / phiIterations;
 
+    #pragma omp parallel for
     for (int i = 0; i < thetaSize; ++i) {
 
         Float t_i = i*m_thetaStep;
@@ -90,9 +91,10 @@ bool EscFunction::create(const FreePath& length,
                     }
                 }
 
-                m_array[k][j][i] = res;
-                fprintf(stderr, "%d\t%d\t%d\n", i, j, k);
+                m_array[k][j][i] = res / norm;
             }
+
+            fprintf(stderr, "%d\t%d\n", i, j);
         }
     }
 
