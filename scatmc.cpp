@@ -516,10 +516,10 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 
-        esc.create(m_length, 360, 360, 300, 15*40);
+        esc.create(m_length, 180, 90, 100, 25*40, 1000, 360);
 	}
 
-	if (isSavePartition()) {
+	if (isSaveEscFunction()) {
 
 		fprintf(stderr, "saving escape function...");
 
