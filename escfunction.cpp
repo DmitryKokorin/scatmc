@@ -136,7 +136,7 @@ bool EscFunction::save(const std::string& name)
     if (!file)
         return false;
 
-    fprintf(file, "%lu %lu %lu %.17e", m_thetaSize,
+    fprintf(file, "%lu %lu %lu %.17e\n", m_thetaSize,
              m_phiSize, m_zSize, m_maxZ);
 
 
