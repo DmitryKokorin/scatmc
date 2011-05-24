@@ -106,7 +106,9 @@ Float EscFunction::operator()(const Float theta, const Float phi, const Float z)
     if (z > m_maxZ)
         return 0;
 
-    return m_array[(int)(z/m_zStep)][(int)(phi/m_phiStep)][(int)(theta/m_thetaStep)];
+    Float phi_ = phi < M_PI ? phi : M_PI - phi;
+
+    return m_array[(int)(z/m_zStep)][(int)(phi_/m_phiStep)][(int)(theta/m_thetaStep)];
 }
 
 bool EscFunction::load(const std::string& name)
@@ -154,6 +156,6 @@ bool EscFunction::save(const std::string& name)
 void EscFunction::recalcSteps()
 {
     m_thetaStep = M_PI / m_thetaSize;
-    m_phiStep = 2*M_PI / m_phiSize;
+    m_phiStep = M_PI / m_phiSize;
     m_zStep = m_maxZ / m_zSize;
 }

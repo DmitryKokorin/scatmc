@@ -39,6 +39,7 @@ const Float ScatMCApp::kThetaMax = 1e-4;
 
 
 ScatMCApp::ScatMCApp() :
+    m_workDir(),
 	m_executableFileName(),
 	m_freePathFileName(),
 	m_partitionFileName(),
@@ -79,6 +80,13 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_seed = atoi(argv[i]);
+		}
+		else if(!strcmp(argv[i], "--workdir")) {
+
+			if (++i == argc)
+				return false;
+
+			m_workDir = argv[i];
 		}
 		else if(!strcmp(argv[i], "--loadfreepath")) {
 
@@ -332,6 +340,8 @@ void ScatMCApp::output()
 		 *det100000file= 0,
 		 *detallfile   = 0;
 
+    std::string fileName = m_workDir;
+
 	det1file     = fopen("output/peak1.txt", "w");
 	det2file     = fopen("output/peak2.txt", "w");
 	det5file     = fopen("output/peak5.txt", "w");
@@ -396,6 +406,7 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "Usage: %s [options]", m_executableFileName.c_str());
 	fprintf(stderr, "\n\nAvailable options:");
 	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
+	fprintf(stderr, "\n--workdir [path]\t\toutput path");
 	fprintf(stderr, "\n--loadfreepath [filename]\t\tload extinction lengths from file");
 	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
 	fprintf(stderr, "\n--loadescfunction [filename]\t\tload escape function from file");
@@ -516,7 +527,7 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 
-        esc.create(m_length, 180, 90, 50, 50, 1000, 360);
+        esc.create(m_length, 90, 90, 50, 2.5, 360, 360);
 	}
 
 	if (isSaveEscFunction()) {

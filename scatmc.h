@@ -42,6 +42,7 @@ private:
 	const std::string& getFreePathFileName() const {return m_freePathFileName;}
 	const std::string& getPartitionFileName() const {return m_partitionFileName;}
 	const std::string& getEscFunctionFileName() const {return m_escFunctionFileName;}
+	const std::string& getWorkDir() const {return m_workDir;}
 
 
 
@@ -53,6 +54,7 @@ private:
 	void output();
 	bool checkResultsReady();
 
+    std::string m_workDir;
 	std::string m_executableFileName;
 	std::string m_freePathFileName;
 	std::string m_partitionFileName;
