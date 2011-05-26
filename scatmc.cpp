@@ -55,6 +55,7 @@ ScatMCApp::ScatMCApp() :
 	m_maxPhotons(1000),
 	m_maxScatterings(10000),
 	m_minPhotonWeight(1e-8),
+    m_photonCnt(0),
 	m_chunkParams()
 {
 	memset(&det1,     0, sizeof(det1));
@@ -216,7 +217,7 @@ int ScatMCApp::run()
 
     //main loop
 
-	int cnt = 0;
+	//int cnt = 0;
 	bool ready = false;
 
 	#pragma omp parallel for
@@ -244,11 +245,15 @@ int ScatMCApp::run()
 
 			#pragma omp critical
 			{
-				++cnt;
-				fprintf(stderr, "%d\t%d\n", cnt, ph.scatterings);
+				++m_photonCnt;
+				fprintf(stderr, "%d\t%d\n", m_photonCnt, 
+ph.scatterings);
 
-				if (0 == cnt % 100)
+				if (0 == m_photonCnt % 100)
 					ready = checkResultsReady();
+
+                if (0 == m_photonCnt % 20)
+                    output();
 			}
 		}
 

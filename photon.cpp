@@ -128,7 +128,7 @@ void Photon::scatter()
 		}
 	}
 
-#if 1
+#if 0
 
     Float esc = 0;
 
@@ -177,8 +177,7 @@ void Photon::scatter()
 	}
 
 //    fprintf(stderr, "esc=%.17e\tapprox=%.17e\t%.17e\n", esc, fullEscIntegral, esc/fullEscIntegral);
-    //calc weight
-    weight *= 1. - esc/fullIntegral;
+        weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()) + M_PI, pos.z()));
 
 
 	//random value to choose rect

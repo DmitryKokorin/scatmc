@@ -74,6 +74,8 @@ private:
 	int m_maxScatterings;
 	Float m_minPhotonWeight;
 
+    int m_photonCnt;
+
     ChunkParamsList    m_chunkParams;
 	
 
