@@ -532,7 +532,7 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 
-        esc.create(m_length, 90, 90, 50, 2.5, 360, 360);
+        esc.create(m_length, 90, 90, 100, 1., 360, 360);
 	}
 
 	if (isSaveEscFunction()) {
