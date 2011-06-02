@@ -20,10 +20,6 @@ using namespace std::tr1;
 mt19937 Photon::rng_core = mt19937();
 uniform_real<Float> Photon::dist = uniform_real<Float> (0., 1.); 
 
-variate_generator<mt19937, uniform_real<Float> > Photon::rng =
-		variate_generator<mt19937, uniform_real<Float> > (rng_core, dist);
-
-
 
 
 void Photon::init(	FreePath* length_,
@@ -46,6 +42,7 @@ Photon::Photon() :
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
+	m_rng(Photon::rng_core, Photon::dist),
 	length(*s_length),
 	partition(*s_partition),
 	escFunction(*s_escFunction),
@@ -67,7 +64,7 @@ void Photon::move()
 
 	#pragma omp critical
 	{
-		rnd = rng();
+		rnd = m_rng();
 	}
 
 	Float d = -log1p(-c1*rnd)*extLength;
@@ -81,8 +78,11 @@ void Photon::scatter()
 	Vector3 v2;
 	Vector3 nn = Optics::n;
 
-	if (Angle(s_i, nn).costheta < 0)
+	if (Angle(s_i, nn).costheta < 0) {
+
 	    nn = -nn;
+	    fprintf(stderr, "n angle: %.17e\n", Angle(s_i, nn).costheta);
+    }
 
 	if (fabs(Angle(s_i, nn).sintheta) > kMachineEpsilon) {
 
@@ -128,31 +128,6 @@ void Photon::scatter()
 		}
 	}
 
-#if 0
-
-    Float esc = 0;
-
-    {
-        Indicatrix ind1 = Indicatrix(s_i, Optics::n);
-        Float phi, theta, dist;
-       
-        for (int i = 0; i < 200; ++i) {
-
-            phi = 2.*M_PI/200 * i;
-
-            for (int j = 1; j < 200; ++j) {
-
-                theta = 0.5*M_PI + 0.5*M_PI/200 * j;
-                dist = pos.z() /  cos(theta);
-                Vector3 s1 = Vector3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
-                esc += ind1(s1)*sin(theta)*exp(dist/length(Angle(s1, Optics::n)));
-            }
-        }
-
-        esc *= 2.*M_PI * 0.5*M_PI / 200 / 200;
-    }
-
-#endif
 
 	RectsVector& rects = m_chunk->m_rects;
 
@@ -176,8 +151,7 @@ void Photon::scatter()
 		}
 	}
 
-//    fprintf(stderr, "esc=%.17e\tapprox=%.17e\t%.17e\n", esc, fullEscIntegral, esc/fullEscIntegral);
-        weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()) + M_PI, pos.z()));
+    weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()) + M_PI, pos.z()));
 
 
 	//random value to choose rect
@@ -189,10 +163,10 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-		randRect = rng()*fullIntegral;
-		randX = rng();
-		randY = rng();
-		randPhi = rng();
+		randRect = m_rng()*fullIntegral;
+		randX    = m_rng();
+		randY    = m_rng();
+		randPhi  = m_rng();
 	}
 
 
@@ -233,12 +207,14 @@ void Photon::scatter()
 		p = 2*M_PI - p;
 
 	Float sintheta = sin(t);
-	Vector3 s_s =  Vector3(  cos(t),
-						     sintheta*sin(p),
-						     sintheta*cos(p));
+	Vector3 s_s =  Vector3(sintheta*cos(p), sintheta*sin(p), cos(t));
 
+	Vector3 old_s(s_i);
 
 	s_i = invert(mtx)*s_s;
+
+
+	fprintf(stderr, "%d\t%.17e\t%d\n", scatterings, s_i*old_s, rectIdx);
 
 	scatterings++;
 }

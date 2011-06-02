@@ -180,6 +180,8 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 int ScatMCApp::run()
 {
+    fprintf(stderr, "# seed = %d\n", getSeed());
+
 	int res = 0;
 
     //free path
@@ -231,13 +233,14 @@ int ScatMCApp::run()
 			        && ph.weight > m_minPhotonWeight) {
 
 				ph.move();
+				//fprintf(stderr, "%.17e\t%.17e\t%.17e\n", ph.pos.x(), ph.pos.y(), ph.pos.z());
 
 				processScattering(ph);
 
 				ph.scatter();
 
-				if (0 == ph.scatterings % 1000)
-				    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
+				//if (0 == ph.scatterings % 1000)
+				//    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
 
 			}
 

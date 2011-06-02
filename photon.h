@@ -43,7 +43,8 @@ protected:
 	static std::tr1::uniform_real<Float> dist;
 
 	// have to use this due to 40263 gcc bug in uniform_real realization
-	static std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > rng;
+	std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > m_rng;
+
 
 	static FreePath* s_length;
 	static Partition* s_partition;

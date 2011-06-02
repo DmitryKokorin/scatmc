@@ -34,7 +34,7 @@ public:
 	static const int   kThetaDegree = 10;           
 	static const int   kThetaSize   = (1 << kThetaDegree) + 1;    //1025
 	static const int   kPhiDegree   = 10;                     
-	static const int   kPhiSize     = (1 << kPhiDegree) + 1;      //257
+	static const int   kPhiSize     = (1 << kPhiDegree) + 1;      //1025
 
 
 	static const Float kThetaResolution;
@@ -64,8 +64,6 @@ private:
 	Node*    m_root;
 	Float**  m_data;             //knots
 	Float**  m_cellIntegrals;    //integrals of elementary cells
-
-//	int m_rectCount;
 
 	std::map<int, int> m_knotsMap;
 

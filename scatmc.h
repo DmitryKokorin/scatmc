@@ -29,7 +29,7 @@ public:
 
 private:
 
-	int  getSeed() { return m_seed; }
+	int  getSeed() const { return m_seed; }
 
 	bool isLoadFreePath() const {return m_loadFreePath;}
 	bool isSaveFreePath() const {return m_saveFreePath;}
