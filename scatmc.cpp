@@ -54,7 +54,7 @@ ScatMCApp::ScatMCApp() :
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(10000),
-	m_minPhotonWeight(1e-8),
+	m_minPhotonWeight(1e-18),
     m_photonCnt(0),
 	m_chunkParams()
 {
@@ -249,8 +249,7 @@ int ScatMCApp::run()
 			#pragma omp critical
 			{
 				++m_photonCnt;
-				fprintf(stderr, "%d\t%d\n", m_photonCnt, 
-ph.scatterings);
+				fprintf(stderr, "%d\t%d\n", m_photonCnt, ph.scatterings);
 
 				if (0 == m_photonCnt % 100)
 					ready = checkResultsReady();
@@ -348,17 +347,31 @@ void ScatMCApp::output()
 		 *det100000file= 0,
 		 *detallfile   = 0;
 
-    std::string fileName = m_workDir;
+	// I'll fix this one day, I promise
 
-	det1file     = fopen("output/peak1.txt", "w");
-	det2file     = fopen("output/peak2.txt", "w");
-	det5file     = fopen("output/peak5.txt", "w");
-	det100file   = fopen("output/peak100.txt", "w");
-	det5000file   = fopen("output/peak5000.txt", "w");
-    det100000file   = fopen("output/peak100000.txt", "w");
+    std::string fileName;
+
+    fileName = m_workDir + "/peak1.txt";
+	det1file     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "/peak2.txt";
+   	det2file     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "/peak5.txt";
+   	det5file     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "/peak100.txt";
+   	det100file     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "/peak5000.txt";
+   	det5000file     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "/peak100000.txt";
+   	det100000file     = fopen(fileName.c_str(), "w");
 
 
-	detallfile   = fopen("output/peakall.txt", "w");
+    fileName = m_workDir + "/peakall.txt";
+	detallfile   = fopen(fileName.c_str(), "w");
 
 
 	Float thetaStep = kThetaMax / kThetaSize;

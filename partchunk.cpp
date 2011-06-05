@@ -61,6 +61,8 @@ bool PartitionChunk::create(const Float minAngle, const Float maxAngle, const in
 PartitionChunk::~PartitionChunk()
 {
 	delete m_root;
+
+	free2dArray(m_cellIntegrals);
 }
 
 void PartitionChunk::setData(Float** const data, const Float& cellSquare)
@@ -91,14 +93,11 @@ void PartitionChunk::refineNode(Node* node)
 
 		if (node->rect.canSplitX() && node->rect.canSplitY()) {
 
-			Float xSplitApproxIntegral = approxIntegral(node->rect.leftHalf()) +
-			                             approxIntegral(node->rect.rightHalf());
+            Float xSplitError = rectError(node->rect.leftHalf()) + 
+                                rectError(node->rect.rightHalf());
 
-			Float ySplitApproxIntegral = approxIntegral(node->rect.topHalf()) +
-			                             approxIntegral(node->rect.bottomHalf());
-
-			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
-			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
+            Float ySplitError = rectError(node->rect.topHalf()) + 
+                                rectError(node->rect.bottomHalf());
 
 
 			if ((xSplitError > rectMaxError) && (xSplitError >= ySplitError)) {
@@ -112,10 +111,9 @@ void PartitionChunk::refineNode(Node* node)
 		}
 		else if (node->rect.canSplitX()) {
 
-			Float xSplitApproxIntegral = approxIntegral(node->rect.leftHalf()) +
-			                             approxIntegral(node->rect.rightHalf());
+            Float xSplitError = rectError(node->rect.leftHalf()) + 
+                                rectError(node->rect.rightHalf());
 
-			Float xSplitError  = fabs(nodeIntegral - xSplitApproxIntegral);
 
 			if (xSplitError > rectMaxError) {
 
@@ -124,10 +122,9 @@ void PartitionChunk::refineNode(Node* node)
 		}
 		else if (node->rect.canSplitY()) {
 
-			Float ySplitApproxIntegral = approxIntegral(node->rect.topHalf()) +
-			                             approxIntegral(node->rect.bottomHalf());
+            Float ySplitError = rectError(node->rect.topHalf()) + 
+                                rectError(node->rect.bottomHalf());
 
-			Float ySplitError  = fabs(nodeIntegral - ySplitApproxIntegral);
 
 			if (ySplitError > rectMaxError) {
 
@@ -161,6 +158,28 @@ Float PartitionChunk::approxIntegral(const GreedRect& rect)
 					m_data[rect.y1][rect.x2] +
 					m_data[rect.y2][rect.x2]) *
 		(rect.square * m_cellSquare);
+}
+
+Float PartitionChunk::rectError(const GreedRect& rect)
+{
+    Float res = 0.;
+    Float a, b, c, d;
+
+    a = m_data[rect.y1][rect.x1] / rect.square;
+    b = m_data[rect.y1][rect.x2] / rect.square;
+    c = m_data[rect.y2][rect.x1] / rect.square;
+    d = m_data[rect.y2][rect.x2] / rect.square;
+
+    for (int i = rect.x1; i < rect.x2; ++i)
+        for (int j = rect.y1; j < rect.y2; ++j) {
+
+            res +=  fabs(m_data[j][i]  -  (a*(rect.x2 - i)*(rect.y2 - j)
+                                         + b*(i - rect.x1)*(rect.y2 - j)
+                                         + c*(rect.x2 - i)*(j - rect.y1)
+                                         + d*(i - rect.x1)*(j - rect.y1)));
+        }
+
+    return res*m_cellSquare;
 }
 
 void PartitionChunk::createPartitionTree()

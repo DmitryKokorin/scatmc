@@ -50,6 +50,7 @@ private:
 	
 	Float integral(const GreedRect& rect);
 	Float approxIntegral(const GreedRect& rect);
+	Float rectError(const GreedRect& rect);
 
 	void createPartitionTree();
 	void createRectsList();

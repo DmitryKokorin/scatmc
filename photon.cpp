@@ -19,7 +19,8 @@ using namespace std::tr1;
 
 mt19937 Photon::rng_core = mt19937();
 uniform_real<Float> Photon::dist = uniform_real<Float> (0., 1.); 
-
+std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> >  Photon::rng = 
+    std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > (rng_core, dist);
 
 
 void Photon::init(	FreePath* length_,
@@ -32,6 +33,7 @@ void Photon::init(	FreePath* length_,
 	s_escFunction = escFunction_;
 
 	Photon::rng_core.seed(seed_);
+    Photon::rng = std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > (Photon::rng_core, Photon::dist);
 }
 
 
@@ -42,7 +44,6 @@ Photon::Photon() :
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
-	m_rng(Photon::rng_core, Photon::dist),
 	length(*s_length),
 	partition(*s_partition),
 	escFunction(*s_escFunction),
@@ -64,7 +65,7 @@ void Photon::move()
 
 	#pragma omp critical
 	{
-		rnd = m_rng();
+		rnd = rng();
 	}
 
 	Float d = -log1p(-c1*rnd)*extLength;
@@ -81,7 +82,7 @@ void Photon::scatter()
 	if (Angle(s_i, nn).costheta < 0) {
 
 	    nn = -nn;
-	    fprintf(stderr, "n angle: %.17e\n", Angle(s_i, nn).costheta);
+	    //fprintf(stderr, "n angle: %.17e\n", Angle(s_i, nn).costheta);
     }
 
 	if (fabs(Angle(s_i, nn).sintheta) > kMachineEpsilon) {
@@ -163,10 +164,10 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-		randRect = m_rng()*fullIntegral;
-		randX    = m_rng();
-		randY    = m_rng();
-		randPhi  = m_rng();
+		randRect = rng()*fullIntegral;
+		randX    = rng();
+		randY    = rng();
+		randPhi  = rng();
 	}
 
 
@@ -214,7 +215,7 @@ void Photon::scatter()
 	s_i = invert(mtx)*s_s;
 
 
-	fprintf(stderr, "%d\t%.17e\t%d\n", scatterings, s_i*old_s, rectIdx);
+	//fprintf(stderr, "%d\t%.17e\t%d\n", scatterings, s_i*old_s, rectIdx);
 
 	scatterings++;
 }
