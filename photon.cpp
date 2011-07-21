@@ -17,8 +17,6 @@ EscFunction*	Photon::s_escFunction	= NULL;
 
 
 RngEngine	Photon::rng_engine	= RngEngine();
-RngDistrib	Photon::rng_distrib	= RngDistrib(0., 1.); 
-Rng*		Photon::rng			= NULL;//Rng(rng_core, dist);
 
 
 
@@ -32,7 +30,6 @@ void Photon::init(	FreePath* length_,
 	s_escFunction = escFunction_;
 
 	Photon::rng_engine.seed(seed_);
-    Photon::rng = new Rng(Photon::rng_engine, Photon::rng_distrib);
 }
 
 

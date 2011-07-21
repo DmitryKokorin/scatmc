@@ -7,6 +7,8 @@
 #include <tr1/random>
 #endif
 
+#include <limits.h>
+
 #include "vector3.h"
 #include "angle.h"
 
@@ -17,13 +19,7 @@ class EscFunction;
 
 typedef std::vector<Float> ValuesVector;
 
-#define MAX_LONG	0xffffffff
-
-//typedef std::tr1::mersenne_twister< long long, 32, 624, 397, 31, 0x9908b0df, 11, 7, 0x9d2c5680, 15, 0xefc60000, 18> mt19937_;
 typedef std::tr1::mt19937 RngEngine;
-//typedef mt19937_ RngEngine;
-typedef std::tr1::uniform_real<Float> RngDistrib;
-typedef std::tr1::variate_generator<RngEngine, RngDistrib> Rng;
 
 
 class Photon
@@ -52,12 +48,8 @@ protected:
 
 
 	static RngEngine	rng_engine;
-	static RngDistrib	rng_distrib;
 
-	// have to use this due to 40263 gcc bug in uniform_real realization
-	static Rng* rng;
-
-	static inline Float random() { return (Float)Photon::rng_engine() / MAX_LONG; }
+	static inline Float random() { return (Float)Photon::rng_engine() / LONG_MAX; }
 
 
 	static FreePath* s_length;
