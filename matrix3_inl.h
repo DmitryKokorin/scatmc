@@ -1,5 +1,6 @@
-#include <cmath>
+#include "mathcompat.h"
 #include "matrix3.h"
+
 
 
 inline Float Matrix3::det() const

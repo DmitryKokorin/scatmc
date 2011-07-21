@@ -26,6 +26,10 @@ public:
 	static const int   kThetaSize  = 50;
 	static const Float kThetaMax;  //max interested value, peak is supposed to be in [0, kThetaMAx]
 
+	static const Float kThetaStep;
+	static const Float kPhiStep;
+
+
 
 private:
 

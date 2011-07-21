@@ -1,8 +1,9 @@
-#include <cmath>
 #include <cstdio>
 #include <memory.h>
 
+#include "mathcompat.h"
 #include "common.h"
+
 #include "optics.h"
 #include "indicatrix.h"
 #include "matrix3.h"

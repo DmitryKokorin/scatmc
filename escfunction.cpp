@@ -1,5 +1,7 @@
 #include <cstdio>
-#include <cmath>
+
+
+#include "mathcompat.h"
 
 #include "optics.h"
 #include "indicatrix.h"
@@ -48,7 +50,7 @@ bool EscFunction::create(const FreePath& length,
     const Float kPhiIterStep = 2.*M_PI / phiIterations;
 
     #pragma omp parallel for
-    for (ULong i = 0; i < thetaSize; ++i) {
+    for (int i = 0; i < (int) thetaSize; ++i) {
 
         Float t_i = i*m_thetaStep;
         Float cost_i = cos(t_i);
@@ -94,7 +96,7 @@ bool EscFunction::create(const FreePath& length,
                 m_array[k][j][i] = res / norm;
             }
 
-            fprintf(stderr, "%lu\t%lu\n", i, j);
+            fprintf(stderr, "%lu\t%lu\n", (ULong)i, j);
         }
     }
 

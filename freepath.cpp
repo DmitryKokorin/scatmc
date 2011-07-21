@@ -1,7 +1,8 @@
-#include <cmath>
 #include <omp.h>
 
 #include <cstdio>
+
+#include "mathcompat.h"
 
 #include "optics.h"
 #include "indicatrix.h"

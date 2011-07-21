@@ -1,7 +1,7 @@
 #ifndef _ANGLE_H_
 #define _ANGLE_H_
 
-#include <cmath>
+#include "mathcompat.h"
 
 #include "vector3.h"
 

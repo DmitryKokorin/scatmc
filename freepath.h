@@ -6,7 +6,7 @@
 
 #include "common.h"
 
-class Angle;
+struct Angle;
 
 
 class FreePath

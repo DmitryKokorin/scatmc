@@ -1,8 +1,8 @@
 #include <cstdio>
-#include <cmath>
 #include <memory.h>
 #include <string.h>
 
+#include "mathcompat.h"
 #include "common.h"
 
 #include "freepath.h"
@@ -36,6 +36,9 @@ int main(int argc, char ** argv)
 }
 
 const Float ScatMCApp::kThetaMax = 1e-4;
+const Float ScatMCApp::kThetaStep = ScatMCApp::kThetaMax / ScatMCApp::kThetaSize;
+const Float ScatMCApp::kPhiStep   = 2*M_PI / ScatMCApp::kPhiSize;
+
 
 
 ScatMCApp::ScatMCApp() :
@@ -254,7 +257,8 @@ int ScatMCApp::run()
 				if (0 == m_photonCnt % 100)
 					ready = checkResultsReady();
 
-                if (0 == m_photonCnt % 20)
+                //if (0 == m_photonCnt % 20)
+				if (0 == m_photonCnt % 5)
                     output();
 			}
 		}
@@ -267,10 +271,10 @@ int ScatMCApp::run()
 
 void ScatMCApp::processScattering(const Photon& ph)
 {
-	Indicatrix ind(ph.s_i, Optics::n);
+	if (0 == ph.scatterings)
+		return;
 
-	Float thetaStep = kThetaMax / kThetaSize;
-	Float phiStep   = 2*M_PI / kPhiSize;
+	Indicatrix ind(ph.s_i, Optics::n);
 
     #pragma omp critical
 	{
@@ -278,8 +282,8 @@ void ScatMCApp::processScattering(const Photon& ph)
 	for (int i = 0; i < kThetaSize; ++i)
 		for (int j = 0; j < kPhiSize; ++j) {
 
-			Float theta_s = i*thetaStep;
-			Float phi_s   = j*phiStep;
+			Float theta_s = i*kThetaStep;
+			Float phi_s   = j*kPhiStep;
 
 			Float sintheta_s = sin(theta_s);
 			Float costheta_s = cos(theta_s);
@@ -406,7 +410,7 @@ bool ScatMCApp::checkResultsReady()
 	int size = kPhiSize*kThetaSize;
 	for (int i = 0; i < size; ++i) {
 
-		if (fabs((*lastdet)[i] < kMachineEpsilon))
+		if (fabs((*lastdet)[i]) < kMachineEpsilon)
 			return false;
 
 		Float err =  fabs(((*detall)[i] - (*lastdet)[i]) / (*lastdet)[i]);
@@ -427,7 +431,7 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "Usage: %s [options]", m_executableFileName.c_str());
 	fprintf(stderr, "\n\nAvailable options:");
 	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
-	fprintf(stderr, "\n--workdir [path]\t\toutput path");
+	fprintf(stderr, "\n--workdir [path]\t\t\toutput path");
 	fprintf(stderr, "\n--loadfreepath [filename]\t\tload extinction lengths from file");
 	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
 	fprintf(stderr, "\n--loadescfunction [filename]\t\tload escape function from file");

@@ -1,7 +1,7 @@
 #ifndef _OPTICS_H_
 #define _OPTICS_H_
 
-#include <cmath>
+#include "mathcompat.h"
 
 #include "angle.h"
 #include "vector3.h"

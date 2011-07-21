@@ -10,17 +10,16 @@
 #include "photon.h"
 
 
-FreePath* Photon::s_length         = NULL;
-Partition* Photon::s_partition     = NULL;
-EscFunction* Photon::s_escFunction = NULL;
+
+FreePath*		Photon::s_length        = NULL;
+Partition*		Photon::s_partition     = NULL;
+EscFunction*	Photon::s_escFunction	= NULL;
 
 
-using namespace std::tr1;
+RngEngine	Photon::rng_engine	= RngEngine();
+RngDistrib	Photon::rng_distrib	= RngDistrib(0., 1.); 
+Rng*		Photon::rng			= NULL;//Rng(rng_core, dist);
 
-mt19937 Photon::rng_core = mt19937();
-uniform_real<Float> Photon::dist = uniform_real<Float> (0., 1.); 
-std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> >  Photon::rng = 
-    std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > (rng_core, dist);
 
 
 void Photon::init(	FreePath* length_,
@@ -32,8 +31,8 @@ void Photon::init(	FreePath* length_,
 	s_partition   = partition_;
 	s_escFunction = escFunction_;
 
-	Photon::rng_core.seed(seed_);
-    Photon::rng = std::tr1::variate_generator<std::tr1::mt19937, std::tr1::uniform_real<Float> > (Photon::rng_core, Photon::dist);
+	Photon::rng_engine.seed(seed_);
+    Photon::rng = new Rng(Photon::rng_engine, Photon::rng_distrib);
 }
 
 
@@ -65,7 +64,10 @@ void Photon::move()
 
 	#pragma omp critical
 	{
-		rnd = rng();
+		//rnd = (*rng)();
+		//rnd = rng_engine() / MAX_LONG;
+
+		rnd = random();
 	}
 
 	Float d = -log1p(-c1*rnd)*extLength;
@@ -164,10 +166,16 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-		randRect = rng()*fullIntegral;
-		randX    = rng();
-		randY    = rng();
-		randPhi  = rng();
+/*		randRect = (*rng)()*fullIntegral;
+		randX    = (*rng)();
+		randY    = (*rng)();
+		randPhi  = (*rng)();
+		*/
+
+		randRect = random()*fullIntegral;
+		randX    = random();
+		randY    = random();
+		randPhi  = random();
 	}
 
 
@@ -210,12 +218,7 @@ void Photon::scatter()
 	Float sintheta = sin(t);
 	Vector3 s_s =  Vector3(sintheta*cos(p), sintheta*sin(p), cos(t));
 
-	Vector3 old_s(s_i);
-
 	s_i = invert(mtx)*s_s;
-
-
-	//fprintf(stderr, "%d\t%.17e\t%d\n", scatterings, s_i*old_s, rectIdx);
 
 	scatterings++;
 }
@@ -241,12 +244,19 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 			x = x1;
 		else if (roots == 2) {
 
-			if (x1 >= 0. && x1 < 1.)
+			if (x1 >= 0. && x1 < 1.) {
+
 				x = x1;
-			else if (x2 >= 0. && x2 < 1.)
+			}
+			else if (x2 >= 0. && x2 < 1.) {
+
 				x = x2;
-			else
+			}
+			else {
+
+				x = 0.5;
 				fprintf(stderr, "x out of range, %f\t%f\n", x1, x2);
+			}
 		}
 	}
 
@@ -258,12 +268,19 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 			y = y1;
 		else if (roots == 2) {
 
-			if (y1 >= 0. && y1 < 1.)
+			if (y1 >= 0. && y1 < 1.) {
+
 				y = y1;
-			else if (y2 >= 0. && y2 < 1.)
+			}
+			else if (y2 >= 0. && y2 < 1.) {
+
 				y = y2;
-			else
+			}
+			else {
+
+				y = 0.5;
 				fprintf(stderr, "y out of range, %f\t%f\n", y1, y2);
+			}
 		}
 	}
 

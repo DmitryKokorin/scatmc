@@ -98,5 +98,4 @@ PartitionChunk* Partition::getChunk(const Float angle)
             return *i;
 
     return NULL;
-
 }
