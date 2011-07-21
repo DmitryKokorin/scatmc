@@ -61,9 +61,6 @@ void Photon::move()
 
 	#pragma omp critical
 	{
-		//rnd = (*rng)();
-		//rnd = rng_engine() / MAX_LONG;
-
 		rnd = random();
 	}
 
@@ -163,12 +160,6 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-/*		randRect = (*rng)()*fullIntegral;
-		randX    = (*rng)();
-		randY    = (*rng)();
-		randPhi  = (*rng)();
-		*/
-
 		randRect = random()*fullIntegral;
 		randX    = random();
 		randY    = random();

@@ -56,8 +56,8 @@ ScatMCApp::ScatMCApp() :
 	m_length(),
 	m_seed(1000),
 	m_maxPhotons(1000),
-	m_maxScatterings(10000),
-	m_minPhotonWeight(1e-18),
+	m_maxScatterings(100000),
+	m_minPhotonWeight(1e-8),
     m_photonCnt(0),
 	m_chunkParams()
 {
@@ -257,7 +257,6 @@ int ScatMCApp::run()
 				if (0 == m_photonCnt % 100)
 					ready = checkResultsReady();
 
-                //if (0 == m_photonCnt % 20)
 				if (0 == m_photonCnt % 5)
                     output();
 			}
@@ -294,11 +293,10 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 			Angle a_s = Angle(s_s, Optics::n);
 
-			Float scale = ph.pos.z() / s_s.z();
-			Float x     = ph.pos.x() + scale*s_s.x();
-			Float y     = ph.pos.y() + scale*s_s.y();
+			Float length = fabs(ph.pos.z() / s_s.z());
+			Float x      = ph.pos.x() + length*s_s.x();
+			Float y      = ph.pos.y() + length*s_s.y();
 
-			Float length = fabs(scale);
 			Float lengthFactor = exp(-length/m_length(a_s));
 
 			Vector3 R = Vector3(x, y, 0);
@@ -552,7 +550,7 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 
-        esc.create(m_length, 90, 90, 100, 1., 360, 360);
+        esc.create(m_length, 180, 180, 300, 1., 1000, 1000);
 	}
 
 	if (isSaveEscFunction()) {
