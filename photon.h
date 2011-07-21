@@ -49,7 +49,7 @@ protected:
 
 	static RngEngine	rng_engine;
 
-	static inline Float random() { return (Float)Photon::rng_engine() / LONG_MAX; }
+	static inline Float random() { return (Float)Photon::rng_engine() / ULONG_MAX; }
 
 
 	static FreePath* s_length;
