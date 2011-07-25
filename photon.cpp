@@ -148,7 +148,8 @@ void Photon::scatter()
 		}
 	}
 
-    weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()) + M_PI, pos.z()));
+
+    weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
 
 
 	//random value to choose rect
@@ -277,4 +278,7 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 
 	x += m_chunk->m_knots[rect.tl].x;
 	y += m_chunk->m_knots[rect.tl].y;
+
+//	x = m_chunk->m_knots[rect.tl].x;
+//	y = m_chunk->m_knots[rect.tl].y;
 }

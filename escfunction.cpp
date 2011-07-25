@@ -109,7 +109,7 @@ Float EscFunction::operator()(const Float theta, const Float phi, const Float z)
         return 0;
 
     Float phi_ = phi >= 0 ? phi : 2.*M_PI + phi;
-    phi_ = phi_ < M_PI ? phi_ : phi_ - M_PI;
+    phi_ = phi_ < M_PI ? phi_ : phi_ - M_PI;	// n and -n are equivalent
 
     int zIdx = (int)(z/m_zStep);
     int phiIdx = (int)(phi_/m_phiStep);

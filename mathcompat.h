@@ -7,7 +7,10 @@
 #include <cmath>
 
 #ifdef WIN32 
+
+#if !defined M_LN2
 #define M_LN2 0.69314718055994530941723212146 // ln(2)
+#endif
 
 #include <limits>
 // Implementation taken from GSL (http://www.gnu.org/software/gsl/)

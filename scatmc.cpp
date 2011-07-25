@@ -230,6 +230,9 @@ int ScatMCApp::run()
 		if (!ready) {
 
 			Photon ph;
+			//Float meanPosZ = 0.;
+			//Float meanSZ = 0.;
+			Vector3 meanS = Vector3(0., 0., 0.);
 
 			while (ph.pos.z() >= 0
 			        && ph.scatterings < m_maxScatterings
@@ -242,10 +245,23 @@ int ScatMCApp::run()
 
 				ph.scatter();
 
+				//meanPosZ	+= ph.pos.z();
+				//meanSZ		+= ph.s_i.z();
+
+				meanS += ph.s_i;
+
 				//if (0 == ph.scatterings % 1000)
 				//    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
 
 			}
+
+			//meanPosZ	/= ph.scatterings;
+			//meanSZ		/= ph.scatterings;
+
+			meanS /= ph.scatterings;
+
+			//fprintf(stderr, "meanPosZ = %.17e\tmeanSZ = %.17e\n", meanPosZ, meanSZ);
+			fprintf(stderr, "%.17e\t%.17e\t%.17e\n", meanS.x(), meanS.y(), meanS.z());
 
 			fprintf(stderr, "weight = %.12e\n", ph.weight);
 
@@ -550,7 +566,7 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 
-        esc.create(m_length, 180, 180, 300, 1., 1000, 1000);
+        esc.create(m_length, 90, 90, 200, 1., 800, 800);
 	}
 
 	if (isSaveEscFunction()) {
