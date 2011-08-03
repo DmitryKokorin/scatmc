@@ -5,7 +5,7 @@ OBJECTS=$(SOURCES:%.cpp=%.o)
 
 
 #debug
-#CPPFLAGS	+=-D__DEBUG__ -g
+CPPFLAGS	+=-D__DEBUG__ -g
 
 #profiling
 #CPPFLAGS	+= -pg
@@ -16,6 +16,11 @@ CPPFLAGS	+=-march=native -O3 -ffast-math -pipe
 
 #warnings
 CPPFLAGS	+=-W -Wall -Weffc++ -Werror -pedantic
+CPPFLAGS	+=-W -Wall -Weffc++ -pedantic
+
+
+#experimental
+#CPPFLAGS    +=-DEXPERIMENTAL=1
 
 #openmp
 CPPFLAGS	+=-fopenmp

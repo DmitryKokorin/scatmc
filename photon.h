@@ -36,7 +36,7 @@ public:
 
 	Vector3   pos;
 	Vector3   s_i;
-	Angle     a_i;
+//	Angle     a_i;
 
 	int scatterings;
 	Float weight;
@@ -49,7 +49,7 @@ protected:
 
 	static RngEngine	rng_engine;
 
-	static inline Float random() { return (Float)Photon::rng_engine() / ULONG_MAX; }
+	static inline Float random() { return (Float)Photon::rng_engine() / /*ULONG_MAX*/UINT_MAX; }
 
 
 	static FreePath* s_length;

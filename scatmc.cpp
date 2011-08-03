@@ -194,7 +194,11 @@ int ScatMCApp::run()
 		return res;
 
     //partition
+#ifdef EXPERIMENTAL
+    int numChunks = 1;
+#else
     int numChunks = 100;
+#endif
     Float chunkStep = 0.5*M_PI / numChunks;
 
     for (int i = 1; i <= numChunks; ++i)
@@ -222,7 +226,6 @@ int ScatMCApp::run()
 
     //main loop
 
-	//int cnt = 0;
 	bool ready = false;
 
 	#pragma omp parallel for
@@ -230,40 +233,19 @@ int ScatMCApp::run()
 		if (!ready) {
 
 			Photon ph;
-			//Float meanPosZ = 0.;
-			//Float meanSZ = 0.;
-			Vector3 meanS = Vector3(0., 0., 0.);
 
-			while (ph.pos.z() >= 0
+			while (ph.pos.z() >= 0.
 			        && ph.scatterings < m_maxScatterings
 			        && ph.weight > m_minPhotonWeight) {
 
 				ph.move();
-				//fprintf(stderr, "%.17e\t%.17e\t%.17e\n", ph.pos.x(), ph.pos.y(), ph.pos.z());
 
 				processScattering(ph);
 
 				ph.scatter();
 
-				//meanPosZ	+= ph.pos.z();
-				//meanSZ		+= ph.s_i.z();
-
-				meanS += ph.s_i;
-
-				//if (0 == ph.scatterings % 1000)
-				//    fprintf(stderr, "ph: %d\tsc: %d\n", i, ph.scatterings);
-
 			}
 
-			//meanPosZ	/= ph.scatterings;
-			//meanSZ		/= ph.scatterings;
-
-			meanS /= ph.scatterings;
-
-			//fprintf(stderr, "meanPosZ = %.17e\tmeanSZ = %.17e\n", meanPosZ, meanSZ);
-			fprintf(stderr, "%.17e\t%.17e\t%.17e\n", meanS.x(), meanS.y(), meanS.z());
-
-			fprintf(stderr, "weight = %.12e\n", ph.weight);
 
 			#pragma omp critical
 			{
@@ -273,7 +255,7 @@ int ScatMCApp::run()
 				if (0 == m_photonCnt % 100)
 					ready = checkResultsReady();
 
-				if (0 == m_photonCnt % 5)
+				if (0 == m_photonCnt % 2)
                     output();
 			}
 		}
@@ -309,14 +291,18 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 			Angle a_s = Angle(s_s, Optics::n);
 
-			Float length = fabs(ph.pos.z() / s_s.z());
-			Float x      = ph.pos.x() + length*s_s.x();
-			Float y      = ph.pos.y() + length*s_s.y();
+			Float dist   = fabs(ph.pos.z() / s_s.z());
+			Float x      = ph.pos.x() + dist*s_s.x();
+			Float y      = ph.pos.y() + dist*s_s.y();
 
-			Float lengthFactor = exp(-length/m_length(a_s));
+			Float lengthFactor = exp(-dist/m_length(a_s));
 
 			Vector3 R = Vector3(x, y, 0);
-			Vector3 q = Optics::ke(s_s, Optics::n);
+#ifndef EXPERIMENTAL
+			Vector3 q = Optics::ke(s_s, Optics::n)*Optics::k0;
+#else
+            Vector3 q = Optics::k0*s_s;
+#endif
 
 			Float probFactor = ind(s_s)/ph.fullIntegral;
 
@@ -350,7 +336,6 @@ void ScatMCApp::processScattering(const Photon& ph)
 				fprintf(stderr, "%f\n", ph.fullIntegral);
 			}
 		}
-
 	}
 }
 
@@ -565,8 +550,11 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 	else {
 
 		fprintf(stderr, "creating escape function...\n");
-
+#ifdef EXPERIMENTAL
+        esc.create(m_length, 180, 1, 301, 15.*Optics::l, 3600, 100);
+#else
         esc.create(m_length, 90, 90, 200, 1., 800, 800);
+#endif
 	}
 
 	if (isSaveEscFunction()) {

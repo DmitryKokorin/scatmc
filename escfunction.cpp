@@ -56,10 +56,16 @@ bool EscFunction::create(const FreePath& length,
         Float cost_i = cos(t_i);
         Float sint_i = sin(t_i);
 
+#ifndef EXPERIMENTAL
         for (ULong j = 0; j < phiSize; ++j) {
 
             Float p_i = j*m_phiStep;
+#else
+        {
+            Float p_i = 0.;
+#endif
 
+            
             Vector3 s_i = Vector3(sint_i*cos(p_i), sint_i*sin(p_i), cost_i);
             Indicatrix ind = Indicatrix(s_i, Optics::n);
 
@@ -93,10 +99,18 @@ bool EscFunction::create(const FreePath& length,
                     }
                 }
 
+#ifndef EXPERIMENTAL
                 m_array[k][j][i] = res / norm;
+#else
+                for (ULong j = 0; j < phiSize; ++j)
+                    m_array[k][j][i] = res / norm;
+#endif
             }
-
+#ifndef EXPERIMENTAL
             fprintf(stderr, "%lu\t%lu\n", (ULong)i, j);
+#else
+            fprintf(stderr, "%lu\n", (ULong)i);
+#endif
         }
     }
 
@@ -115,12 +129,14 @@ Float EscFunction::operator()(const Float theta, const Float phi, const Float z)
     int phiIdx = (int)(phi_/m_phiStep);
     int thetaIdx = (int)(theta/m_thetaStep);
 
-//    fprintf(stderr, "%d\t%d\t%d\n", zIdx, phiIdx, thetaIdx);
-
     if (zIdx == (int)(m_zSize - 1))
         return m_array[zIdx][phiIdx][thetaIdx];
 
     Float mu = z - zIdx*m_zStep;
+
+//    fprintf(stderr, "%d\t%d\t%d\n", zIdx, phiIdx, thetaIdx);
+//    fprintf(stderr, "%.17e\t%.17e\n", theta, m_thetaStep);
+
     return (1. - mu)*m_array[zIdx][phiIdx][thetaIdx] +
                  mu* m_array[zIdx+1][phiIdx][thetaIdx];
 }

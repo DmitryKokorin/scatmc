@@ -24,6 +24,7 @@ extern const Float K1;
 extern const Float K2;
 
 extern const Float lambda;
+extern const Float k0;
 extern const Float xi;
 
 extern const Float T;
@@ -36,6 +37,17 @@ extern const Float Hi_alpha;
 
 extern const Float s0;
 extern const Float add;
+
+
+#ifdef EXPERIMENTAL
+
+extern const Float g;
+
+extern const Float l;				//free path in cm
+extern const Float ls;
+
+#endif
+
 
 
 
@@ -67,6 +79,7 @@ inline Vector3 ke(const Vector3& direction, const Angle& a)
 {
 	Float nn = ne(a);
 	return Vector3(direction).normalize()*nn;
+//    return Vector3(direction).normalize()*nn*k0;
 }
 
 inline Vector3 ke(const Vector3& direction, const Vector3& nn)

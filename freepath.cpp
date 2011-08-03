@@ -17,7 +17,17 @@ const Float FreePath::kResolution = 0.5 * M_PI / (kPoints-1);
 bool FreePath::create(const int kThetaIterations /*= 1000*/,
                        const int kPhiIterations /*= 1000*/)
 {
-   	const Float kThetaStep = M_PI / kThetaIterations;
+
+#ifdef EXPERIMENTAL
+
+   	for (int i = 0; i < kPoints; ++i) {
+
+   	    lengths[i] = Optics::l;
+    }
+
+#else
+
+    const Float kThetaStep = M_PI / kThetaIterations;
 	const Float kPhiStep   = 2. * M_PI / kPhiIterations;
 
 	Float theta_i = 0.;
@@ -77,6 +87,7 @@ bool FreePath::create(const int kThetaIterations /*= 1000*/,
 	}
 
 	lengths[0] = lengths[1];
+#endif
 
 	return true;
 }

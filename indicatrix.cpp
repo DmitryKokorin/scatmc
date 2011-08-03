@@ -8,6 +8,16 @@
 
 const Float Indicatrix::kCalculationEpsilon = kMachineEpsilon;
 
+#ifdef EXPERIMENTAL
+
+inline Float hg_prob(const Float ct)
+{
+    Float t = 1./(1 + Optics::g*Optics::g - 2.*Optics::g*ct);
+    return 0.5*(1 - Optics::g*Optics::g)*t*sqrt(t);
+}
+
+#endif
+
 
 Indicatrix::Indicatrix(const Vector3& s_i_, const Vector3& n_i_) :
 	s_i(s_i_),
@@ -30,6 +40,11 @@ Indicatrix::~Indicatrix()
 
 Float Indicatrix::operator()(const Vector3& s_s)
 {
+#ifdef EXPERIMENTAL
+
+    return hg_prob(s_i*s_s);
+
+#else
 	Angle a_s     = Angle(s_s, n_i);
 	Vector3 k_s   = Optics::ke(s_s, a_s);
 	Float cosde_s = Optics::cosde(a_s);
@@ -70,4 +85,6 @@ Float Indicatrix::operator()(const Vector3& s_s)
 	           (Optics::t2*qeeperp*qeeperp + qeepar*qeepar + Optics::add);
 
 	return res;
+
+#endif
 }

@@ -36,7 +36,7 @@ void Photon::init(	FreePath* length_,
 Photon::Photon() :
 	pos(0.,0.,0.),
 	s_i(0., 0., 1.),
-	a_i(Angle(s_i, Optics::n)),
+//	a_i(Angle(s_i, Optics::n)),
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
@@ -55,18 +55,30 @@ Photon::Photon() :
 void Photon::move()
 {
 	Float rnd;
-	Float extLength = length(Angle(s_i, Optics::n));
+	Float meanFreePath = length(Angle(s_i, Optics::n));
 
-    Float c1 = (s_i.z() >= 0) ? 1. : -expm1(pos.z()/s_i.z()/extLength);
+    Float c1 = (s_i.z() >= 0) ? 1. : -expm1((pos.z()/s_i.z())/meanFreePath);
 
 	#pragma omp critical
 	{
 		rnd = random();
 	}
 
-	Float d = -log1p(-c1*rnd)*extLength;
+	Float d = -log1p(-c1*rnd)*meanFreePath;
 
 	pos += d*s_i;
+
+/*    Float rnd;
+    Float meanFreePath = length(Angle(s_i, Optics::n));
+    Float c1 = (s_i.z() >= 0.0 ? 1.0 : 1.0 - exp((pos.z()/s_i.z())/meanFreePath));
+
+   	#pragma omp critical
+	{
+		rnd = random();
+	}
+
+	Float d = -log(1. - c1*rnd) * meanFreePath;
+	pos += d*s_i;*/
 }
 
 void Photon::scatter()
@@ -81,7 +93,10 @@ void Photon::scatter()
 	    //fprintf(stderr, "n angle: %.17e\n", Angle(s_i, nn).costheta);
     }
 
-	if (fabs(Angle(s_i, nn).sintheta) > kMachineEpsilon) {
+    Angle a_i = Angle(s_i, nn);
+    m_chunk = partition.getChunk(a_i.theta);
+
+	if (fabs(a_i.sintheta) > kMachineEpsilon) {
 
 		v2 = crossProduct(s_i, nn).normalize();
 	}
@@ -95,15 +110,10 @@ void Photon::scatter()
 
 	Matrix3 mtx = createTransformMatrix(v2, v3, s_i);
 
-	nn = mtx*nn;                            //director in k_i based coordinate system
-	Vector3 oz = mtx*Vector3(0., 0., 1.);   //z axis in k_i based coordinate system
-
-	Angle a_i = Angle(v1, nn);
-	Vector3 k_i = Optics::ke(v1, a_i);
+	nn = mtx*nn;                            //director in s_i -based coordinate system
 
 	Indicatrix ind = Indicatrix(v1, nn);
-	m_chunk = partition.getChunk(a_i.theta);
-
+	
 	//compute integrals
 	{
 		KnotsVector& knots = m_chunk->m_knots;
@@ -147,7 +157,6 @@ void Photon::scatter()
 			m_rectValues.push_back(fullIntegral);
 		}
 	}
-
 
     weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
 
@@ -208,6 +217,8 @@ void Photon::scatter()
 	Vector3 s_s =  Vector3(sintheta*cos(p), sintheta*sin(p), cos(t));
 
 	s_i = invert(mtx)*s_s;
+
+	s_i.normalize();  //to be sure
 
 	scatterings++;
 }
@@ -279,6 +290,4 @@ void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Floa
 	x += m_chunk->m_knots[rect.tl].x;
 	y += m_chunk->m_knots[rect.tl].y;
 
-//	x = m_chunk->m_knots[rect.tl].x;
-//	y = m_chunk->m_knots[rect.tl].y;
 }
