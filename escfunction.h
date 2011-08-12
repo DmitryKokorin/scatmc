@@ -3,7 +3,7 @@
 
 #include <string>
 
-class FreePath;
+//class FreePathEE;
 
 class EscFunction
 {
@@ -12,7 +12,7 @@ public:
     EscFunction();
     ~EscFunction();
 
-    bool create(const FreePath& lengths,
+    bool create(const FreePathEE& lengths,
                 const ULong thetaSize,
                 const ULong phiSize,
                 const ULong zSize,

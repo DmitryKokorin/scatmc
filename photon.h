@@ -10,7 +10,6 @@
 #include <limits.h>
 
 #include "vector3.h"
-//#include "angle.h"
 #include "matrix3.h"
 
 class ExtLength;
@@ -30,7 +29,7 @@ class Photon
 public:
 
 	Photon();
-    static void init(FreePath* length, Partition* partition, EscFunction* escFunction,
+    static void init(FreePathEE* length, Partition* partition, EscFunction* escFunction,
             unsigned long seed = 1000);
 
 	void move();
@@ -56,12 +55,12 @@ protected:
 	static inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
 
 
-	static FreePath* s_length;
+	static FreePathEE* s_length;
 	static Partition* s_partition;
 	static EscFunction* s_escFunction;
 
     //these are to simulate static behavior for a reference (without ugly pointer syntax)
-	FreePath& length;
+	FreePathEE& length;
 	Partition& partition;
 	EscFunction& escFunction;
 

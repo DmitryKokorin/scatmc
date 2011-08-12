@@ -293,7 +293,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 			Vector3 R = Vector3(x, y, 0);
 #ifndef EXPERIMENTAL
-			Vector3 q = Optics::EBeam::k(s_s, Optics::director)*Optics::k0;
+			Vector3 q = Optics::EBeam::k(s_s, a_s)*Optics::k0;
 #else
             Vector3 q = Optics::k0*s_s;
 #endif
@@ -416,7 +416,7 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n");
 }
 
-int ScatMCApp::prepareFreePath(FreePath& l)
+int ScatMCApp::prepareFreePath(FreePathEE& l)
 {
 	if (isLoadFreePath()) {
 

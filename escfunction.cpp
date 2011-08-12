@@ -27,7 +27,7 @@ EscFunction::~EscFunction()
 //    free3dArray(m_array);
 }
 
-bool EscFunction::create(const FreePath& length,
+bool EscFunction::create(const FreePathEE& length,
                          const ULong thetaSize,
                          const ULong phiSize,
                          const ULong zSize,

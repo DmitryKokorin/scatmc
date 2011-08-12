@@ -58,104 +58,92 @@ inline Float HenyeyGreenstein(const Float ct)
 
 /////////////////////////////////////////////////////
 
-namespace OBeam {
+class OBeam {
+public:    
 
-inline Float n(const Angle& /*a*/)
-{
-    return _no;
-}
+    static inline Float n(const Angle& /*a*/)
+    {
+        return _no;
+    }
 
-inline Vector3 k(const Vector3& direction, const Angle& a)
-{
-    return Vector3(direction).normalize()*n(a);
-}
+    static inline Vector3 k(const Vector3& direction, const Angle& a)
+    {
+        return Vector3(direction).normalize()*n(a);
+    }
 
-inline Float cosd(const Angle& /*a*/)
-{
-	return 1.0;
-}
+    static inline Float cosd(const Angle& /*a*/)
+    {
+	    return 1.0;
+    }
 
-inline Float f2(const Angle& /*a*/)
-{
-	return 1.0;
-}
+    static inline Float f2(const Angle& /*a*/)
+    {
+	    return 1.0;
+    }
 
-
-//s is a unit vector, s = k/|k|
-inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& /*a*/)
-{
-	return crossProduct(k, nn).normalize();
-}
-
-} //namespace OBeam
-
-
-////////////////////////////////////////////////////
-
-namespace EBeam {
-
-//refraction index
-inline Float n(const Angle& a)
-{
-	return sqrt(eps_perp*eps_par / (eps_perp + eps_a*a.cos2theta));
-}
-
-inline Vector3 k(const Vector3& direction, const Angle& a)
-{
-	Float nn = n(a);
-	return Vector3(direction).normalize()*nn;
-}
-
-inline Vector3 k(const Vector3& direction, const Vector3& nn)
-{
-	return k(direction, Angle(direction, nn));
-}
-
-inline Float cosd(const Angle& a)
-{
-	return (eps_perp*a.sin2theta + eps_par*a.cos2theta) /                               \
-		sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta);
-}
-
-inline Float f2(const Angle& a)
-{
-	return (eps_perp*a.sin2theta + eps_par*a.cos2theta) *                               \
-		   (eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta) /              \
-		   (eps_par*eps_perp*eps_perp);
-}
-
-//polarization vector
-
-//s is a unit vector, s = k/|k|
-inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& a)
-{
-	if (fabs(a.sintheta) > kMachineEpsilon) {
-
-		Vector3 s = Vector3(k).normalize();
-		return (s*eps_par*a.costheta - nn*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
-	}
-	else { //along the optical axis, so we use the expression for the ordinary beam polarization
-
-		//return crossProduct(k, nn).normalize();
-		return Optics::OBeam::e(k, nn, a);
-	}
-}
-
-inline Vector3 e(const Vector3& s, const Vector3& n)
-{
-	return e(s, n, Angle(s, n));
-}
+    //s is a unit vector, s = k/|k|
+    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& /*a*/)
+    {
+	    return crossProduct(k, nn).normalize();
+    }
+};
 
 
+class EBeam {
+public:
 
-} //namespace EBeam
+    //refraction index
+    static inline Float n(const Angle& a)
+    {
+    	return sqrt(eps_perp*eps_par / (eps_perp + eps_a*a.cos2theta));
+    }
 
-/*
-inline Float een(const Angle& a)
-{
-	return eps_perp*a.sintheta/sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta);
-}
+    static inline Vector3 k(const Vector3& direction, const Angle& a)
+    {
+	    Float nn = n(a);
+    	return Vector3(direction).normalize()*nn;
+    }
+
+/*    static inline Vector3 k(const Vector3& direction, const Vector3& nn)
+    {
+	    return k(direction, Angle(direction, nn));
+    }
 */
+    static inline Float cosd(const Angle& a)
+    {
+	    return (eps_perp*a.sin2theta + eps_par*a.cos2theta) /                               \
+		    sqrt(eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta);
+    }
+
+    static inline Float f2(const Angle& a)
+    {
+	    return (eps_perp*a.sin2theta + eps_par*a.cos2theta) *                               \
+		       (eps_perp*eps_perp*a.sin2theta + eps_par*eps_par*a.cos2theta) /              \
+		    (eps_par*eps_perp*eps_perp);
+    }
+
+    //polarization vector
+
+    //s is a unit vector, s = k/|k|
+    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& a)
+    {
+	    if (fabs(a.sintheta) > kMachineEpsilon) {
+
+		    Vector3 s = Vector3(k).normalize();
+		    return (s*eps_par*a.costheta - nn*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
+	    }
+    	else { //along the optical axis, so we use the expression for the ordinary beam polarization
+
+		    //return crossProduct(k, nn).normalize();
+		    return Optics::OBeam::e(k, nn, a);
+	    }
+    }
+
+/*  static inline Vector3 e(const Vector3& s, const Vector3& n)
+    {
+	    return e(s, n, Angle(s, n));
+    }*/
+};
 
 
 }  //namespace Optics

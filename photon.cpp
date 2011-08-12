@@ -11,7 +11,7 @@
 
 
 
-FreePath*		Photon::s_length        = NULL;
+FreePathEE*		Photon::s_length        = NULL;
 Partition*		Photon::s_partition     = NULL;
 EscFunction*	Photon::s_escFunction	= NULL;
 
@@ -20,7 +20,7 @@ RngEngine	Photon::rng_engine	= RngEngine();
 
 
 
-void Photon::init(	FreePath* length_,
+void Photon::init(	FreePathEE* length_,
 					Partition* partition_,
 					EscFunction* escFunction_,
 					unsigned long seed_)

@@ -52,7 +52,7 @@ private:
 
 
 
-	int  prepareFreePath(FreePath& length);
+	int  prepareFreePath(FreePathEE& length);
 	int  preparePartition(Partition& partition);
     int  prepareEscFunction(EscFunction& escFunction);
 
@@ -72,7 +72,7 @@ private:
 	bool m_loadEscFunction;
 	bool m_saveEscFunction;
 
-	FreePath m_length;
+	FreePathEE m_length;
 
 	int m_seed;
 	int m_maxPhotons;
