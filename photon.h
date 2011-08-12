@@ -10,12 +10,14 @@
 #include <limits.h>
 
 #include "vector3.h"
-#include "angle.h"
+//#include "angle.h"
+#include "matrix3.h"
 
 class ExtLength;
 class Partition;
 class PartitionChunk;
 class EscFunction;
+class Angle;
 
 typedef std::vector<Float> ValuesVector;
 
@@ -36,7 +38,6 @@ public:
 
 	Vector3   pos;
 	Vector3   s_i;
-//	Angle     a_i;
 
 	int scatterings;
 	Float weight;
@@ -44,12 +45,15 @@ public:
 
 protected:
 
+    void createTransformToPartitionCoords(Matrix3& mtx, Vector3& nn, Angle& a_i);
+    void selectPartitionChunk(const Float theta);
+    void calcPartitionValues(const Vector3& nn);
 	void choosePointInRect(Float& x, Float& y, const int rectIdx, const Float randX, const Float randY);
 
 
 	static RngEngine	rng_engine;
 
-	static inline Float random() { return (Float)Photon::rng_engine() / /*ULONG_MAX*/UINT_MAX; }
+	static inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
 
 
 	static FreePath* s_length;

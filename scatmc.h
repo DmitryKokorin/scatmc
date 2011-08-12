@@ -29,6 +29,8 @@ public:
 	static const Float kThetaStep;
 	static const Float kPhiStep;
 
+	static const int   kSaveRate = 2; //save results each on each kSaveRate photons simulated
+
 
 
 private:
@@ -56,7 +58,6 @@ private:
 
 	void processScattering(const Photon& ph);
 	void output();
-	bool checkResultsReady();
 
     std::string m_workDir;
 	std::string m_executableFileName;

@@ -6,85 +6,207 @@
 #include "indicatrix.h"
 
 
-const Float Indicatrix::kCalculationEpsilon = kMachineEpsilon;
-
-#ifdef EXPERIMENTAL
-
-inline Float hg_prob(const Float ct)
-{
-    Float t = 1./(1 + Optics::g*Optics::g - 2.*Optics::g*ct);
-    return 0.5*(1 - Optics::g*Optics::g)*t*sqrt(t);
-}
-
-#endif
+const Float IndicatrixBase::kCalculationEpsilon = kMachineEpsilon;
 
 
-Indicatrix::Indicatrix(const Vector3& s_i_, const Vector3& n_i_) :
+
+IndicatrixBase::IndicatrixBase(const Vector3& s_i_, const Vector3& director_i_) :
 	s_i(s_i_),
 	k_i(),
-	n_i(n_i_),
-	a_i(s_i, n_i_),
-	ee_i(),
-	een_i(),
+	director_i(director_i_),
+	a_i(s_i, director_i_),
+	e_i(),
+	ei_n(),
 	factor1()
 {
-	k_i   = Optics::ke(s_i, a_i);
-	ee_i  = Optics::ee(k_i, n_i, a_i);
-	een_i = Optics::een(a_i); 
-	factor1 = Optics::s0/(Optics::ne(a_i)*Optics::cosde(a_i));
 }
 
-Indicatrix::~Indicatrix()
+/////////////////////////////////////////////////////////
+
+IndicatrixEE::IndicatrixEE(const Vector3& s_i_, const Vector3& director_i_) :
+    IndicatrixBase(s_i_, director_i_)
 {
+	k_i  = Optics::EBeam::k(s_i, a_i);
+	e_i  = Optics::EBeam::e(k_i, director_i, a_i);
+
+	ei_n = e_i*director_i;
+	factor1 = Optics::s0/(Optics::EBeam::n(a_i)*Optics::EBeam::cosd(a_i));
 }
 
-Float Indicatrix::operator()(const Vector3& s_s)
+
+Float IndicatrixEE::operator()(const Vector3& s_s)
 {
-#ifdef EXPERIMENTAL
+	Angle a_s     = Angle(s_s, director_i);
+	Vector3 k_s   = Optics::EBeam::k(s_s, a_s);
+	Float cosd_s  = Optics::EBeam::cosd(a_s);
 
-    return hg_prob(s_i*s_s);
+	Float res = factor1 * Optics::EBeam::f2(a_s) * Optics::EBeam::n(a_s)/(cosd_s*cosd_s*cosd_s);
 
-#else
-	Angle a_s     = Angle(s_s, n_i);
-	Vector3 k_s   = Optics::ke(s_s, a_s);
-	Float cosde_s = Optics::cosde(a_s);
+	Vector3 q       = k_s - k_i;
+	Vector3 q_par   = director_i*(q*director_i);
+	Vector3 q_perp  = q - q_par;
 
-	Float res = factor1 * Optics::f2(a_s) * Optics::ne(a_s)/(cosde_s*cosde_s*cosde_s);
+	Vector3 a1 = q_perp; 
 
-	Vector3 qee     = k_s - k_i;
-	Vector3 qeepar  = n_i*(qee*n_i);
-	Vector3 qeeperp = qee - qeepar;
-
-	Vector3 a1 = qeeperp; 
-
-	if (a1.norm() < qee.norm()*kCalculationEpsilon) { //along the optical axis
+	if (a1.norm() < q.norm()*kCalculationEpsilon) { //along the optical axis
 
 		//we need some a1 vector here, any unit vector that is perpendicular to n
 
-		a1 = createSomePerpendicular(n_i);
+		a1 = createSomePerpendicular(director_i);
 	}
 
 	a1.normalize();
 
-	Vector3 a2 = crossProduct(n_i, a1);
+	Vector3 a2 = crossProduct(director_i, a1);
 	a2.normalize();   //to be sure
 	
-	Vector3 ee_s  = Optics::ee(k_s, n_i, a_s);
-	Float   een_s = Optics::een(a_s);
+	Vector3 e_s  = Optics::EBeam::e(k_s, director_i, a_s);
+	Float es_n = e_s*director_i;
 
-	Float eea1, eea2, eeia1, eeia2;
+	Float es_a1, es_a2, ei_a1, ei_a2;
 
-	eea1  = ee_s*a1;
-	eea2  = ee_s*a2;
-	eeia1 = ee_i*a1;
-	eeia2 = ee_i*a2;
+	es_a1  = e_s*a1;
+	es_a2  = e_s*a2;
+	ei_a1  = e_i*a1;
+	ei_a2  = e_i*a2;
 
-	res *= (eeia1*eeia1*een_s*een_s + 2.*eeia1*een_s*een_i*eea1 + eea1*eea1*een_i*een_i) /
-		       (Optics::t1*qeeperp*qeeperp + qeepar*qeepar + Optics::add) + 
-	       (eeia2*eeia2*een_s*een_s + 2.*eeia2*een_s*een_i*eea2 + eea2*eea2*een_i*een_i) / 
-	           (Optics::t2*qeeperp*qeeperp + qeepar*qeepar + Optics::add);
+	res *= (ei_a1*ei_a1*es_n*es_n + 2.*ei_a1*es_n*ei_n*es_a1 + es_a1*es_a1*ei_n*ei_n) /
+		       (Optics::t1*q_perp*q_perp + q_par*q_par + Optics::add) + 
+	       (ei_a2*ei_a2*es_n*es_n + 2.*ei_a2*es_n*ei_n*es_a2 + es_a2*es_a2*ei_n*ei_n) / 
+	           (Optics::t2*q_perp*q_perp + q_par*q_par + Optics::add);
 
 	return res;
+}
+
+
+/////////////////////////////////////////////////////////
+
+IndicatrixEO::IndicatrixEO(const Vector3& s_i_, const Vector3& director_i_) :
+    IndicatrixBase(s_i_, director_i_)
+{
+	k_i  = Optics::EBeam::k(s_i, a_i);
+	e_i  = Optics::EBeam::e(k_i, director_i, a_i);
+
+	ei_n = e_i*director_i; 
+	factor1 = Optics::s0/(Optics::EBeam::n(a_i)*Optics::EBeam::cosd(a_i));
+}
+
+Float IndicatrixEO::operator()(const Vector3& s_s)
+{
+	Angle a_s     = Angle(s_s, director_i);
+	Vector3 k_s   = Optics::OBeam::k(s_s, a_s);
+	Float cosd_s  = Optics::OBeam::cosd(a_s);
+
+	Float res = factor1 * Optics::OBeam::f2(a_s) * Optics::OBeam::n(a_s)/(cosd_s*cosd_s*cosd_s);
+
+	Vector3 q       = k_s - k_i;
+	Vector3 q_par   = director_i*(q*director_i);
+	Vector3 q_perp  = q - q_par;
+
+	Vector3 a1 = q_perp; 
+
+	if (a1.norm() < q.norm()*kCalculationEpsilon) { //along the optical axis
+
+		//we need some a1 vector here, any unit vector that is perpendicular to n
+
+		a1 = createSomePerpendicular(director_i);
+	}
+
+	a1.normalize();
+
+	Vector3 a2 = crossProduct(director_i, a1);
+	a2.normalize();   //to be sure
+	
+	Vector3 e_s = Optics::OBeam::e(k_s, director_i, a_s);
+    Float es_n  = e_s*director_i;
+
+	Float es_a1, es_a2, ei_a1, ei_a2;
+
+	es_a1  = e_s*a1;
+	es_a2  = e_s*a2;
+	ei_a1  = e_i*a1;
+	ei_a2  = e_i*a2;
+
+	res *= (ei_a1*ei_a1*es_n*es_n + 2.*ei_a1*es_n*ei_n*es_a1 + es_a1*es_a1*ei_n*ei_n) /
+		       (Optics::t1*q_perp*q_perp + q_par*q_par + Optics::add) + 
+	       (ei_a2*ei_a2*es_n*es_n + 2.*ei_a2*es_n*ei_n*es_a2 + es_a2*es_a2*ei_n*ei_n) / 
+	           (Optics::t2*q_perp*q_perp + q_par*q_par + Optics::add);
+
+	return res;
+}
+
+
+/////////////////////////////////////////////////////////
+
+IndicatrixOE::IndicatrixOE(const Vector3& s_i_, const Vector3& director_i_) :
+    IndicatrixBase(s_i_, director_i_)
+{
+	k_i  = Optics::OBeam::k(s_i, a_i);
+	e_i  = Optics::OBeam::e(k_i, director_i, a_i);
+
+	ei_n = e_i*director_i; 
+	factor1 = Optics::s0/(Optics::OBeam::n(a_i)*Optics::OBeam::cosd(a_i));
+}
+
+
+Float IndicatrixOE::operator()(const Vector3& s_s)
+{
+	Angle a_s     = Angle(s_s, director_i);
+	Vector3 k_s   = Optics::EBeam::k(s_s, a_s);
+	Float cosd_s  = Optics::EBeam::cosd(a_s);
+
+	Float res = factor1 * Optics::EBeam::f2(a_s) * Optics::EBeam::n(a_s)/(cosd_s*cosd_s*cosd_s);
+
+	Vector3 q       = k_s - k_i;
+	Vector3 q_par   = director_i*(q*director_i);
+	Vector3 q_perp  = q - q_par;
+
+	Vector3 a1 = q_perp; 
+
+	if (a1.norm() < q.norm()*kCalculationEpsilon) { //along the optical axis
+
+		//we need some a1 vector here, any unit vector that is perpendicular to n
+
+		a1 = createSomePerpendicular(director_i);
+	}
+
+	a1.normalize();
+
+	Vector3 a2 = crossProduct(director_i, a1);
+	a2.normalize();   //to be sure
+	
+	Vector3 e_s  = Optics::EBeam::e(k_s, director_i, a_s);
+	Float   es_n = e_s*director_i;
+
+	Float es_a1, es_a2, ei_a1, ei_a2;
+
+	es_a1  = e_s*a1;
+	es_a2  = e_s*a2;
+	ei_a1  = e_i*a1;
+	ei_a2  = e_i*a2;
+
+	res *= (ei_a1*ei_a1*es_n*es_n + 2.*ei_a1*es_n*ei_n*es_a1 + es_a1*es_a1*ei_n*ei_n) /
+		       (Optics::t1*q_perp*q_perp + q_par*q_par + Optics::add) + 
+	       (ei_a2*ei_a2*es_n*es_n + 2.*ei_a2*es_n*ei_n*es_a2 + es_a2*es_a2*ei_n*ei_n) / 
+	           (Optics::t2*q_perp*q_perp + q_par*q_par + Optics::add);
+
+	return res;
+}
+
+
+
+///////////////////////////////////////////////////////
+
+#ifdef EXPERIMENTAL
+
+IndicatrixHenyey::IndicatrixHenyey(const Vector3& s_i_, const Vector3& director_i_) :
+    IndicatrixBase(s_i_, director_i_)
+{
+}
+
+Float IndicatrixHenyey::operator()(const Vector3& s_s)
+{
+    return Optics::HenyeyGreenstein(s_i*s_s);
+}
 
 #endif
-}

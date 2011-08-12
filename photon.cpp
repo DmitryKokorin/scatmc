@@ -36,7 +36,6 @@ void Photon::init(	FreePath* length_,
 Photon::Photon() :
 	pos(0.,0.,0.),
 	s_i(0., 0., 1.),
-//	a_i(Angle(s_i, Optics::n)),
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
@@ -55,7 +54,7 @@ Photon::Photon() :
 void Photon::move()
 {
 	Float rnd;
-	Float meanFreePath = length(Angle(s_i, Optics::n));
+	Float meanFreePath = length(Angle(s_i, Optics::director));
 
     Float c1 = (s_i.z() >= 0) ? 1. : -expm1((pos.z()/s_i.z())/meanFreePath);
 
@@ -67,96 +66,17 @@ void Photon::move()
 	Float d = -log1p(-c1*rnd)*meanFreePath;
 
 	pos += d*s_i;
-
-/*    Float rnd;
-    Float meanFreePath = length(Angle(s_i, Optics::n));
-    Float c1 = (s_i.z() >= 0.0 ? 1.0 : 1.0 - exp((pos.z()/s_i.z())/meanFreePath));
-
-   	#pragma omp critical
-	{
-		rnd = random();
-	}
-
-	Float d = -log(1. - c1*rnd) * meanFreePath;
-	pos += d*s_i;*/
 }
 
 void Photon::scatter()
 {
-	//coordinate system
-	Vector3 v2;
-	Vector3 nn = Optics::n;
+    Vector3 nn;
+    Matrix3 mtx;
+    Angle   a_i;
 
-	if (Angle(s_i, nn).costheta < 0) {
-
-	    nn = -nn;
-	    //fprintf(stderr, "n angle: %.17e\n", Angle(s_i, nn).costheta);
-    }
-
-    Angle a_i = Angle(s_i, nn);
-    m_chunk = partition.getChunk(a_i.theta);
-
-	if (fabs(a_i.sintheta) > kMachineEpsilon) {
-
-		v2 = crossProduct(s_i, nn).normalize();
-	}
-	else {
-
-		v2 = createSomePerpendicular(s_i).normalize();
-	}
-
-	Vector3 v3 = crossProduct(s_i, v2).normalize();
-	Vector3 v1 = Vector3(0., 0., 1.);
-
-	Matrix3 mtx = createTransformMatrix(v2, v3, s_i);
-
-	nn = mtx*nn;                            //director in s_i -based coordinate system
-
-	Indicatrix ind = Indicatrix(v1, nn);
-	
-	//compute integrals
-	{
-		KnotsVector& knots = m_chunk->m_knots;
-		KnotsVector::iterator k;
-
-		m_knotValues.clear();
-
-		Float res;
-
-		for (k = knots.begin(); k != knots.end(); ++k) {
-
-			Float   sintheta = sin(k->x);
-			Vector3 s_s      = Vector3(  sintheta*cos(k->y),
-									     sintheta*sin(k->y),
-									     cos(k->x));
-
-	        res = sintheta*ind(s_s);
-			m_knotValues.push_back(res);
-		}
-	}
-
-
-	RectsVector& rects = m_chunk->m_rects;
-
-	{
-		RectsVector::iterator i;
-		fullIntegral = 0.;
-
-		m_rectValues.clear();
-
-		for (i = rects.begin(); i != rects.end(); ++i) {
-
-			Float rectIntegral = 0.25* (m_knotValues[(*i).tl] +
-										m_knotValues[(*i).tr] +
-										m_knotValues[(*i).bl] +
-										m_knotValues[(*i).br]) *
-								(*i).square;
-
-			fullIntegral += rectIntegral;
-
-			m_rectValues.push_back(fullIntegral);
-		}
-	}
+    createTransformToPartitionCoords(mtx, nn, a_i);
+    selectPartitionChunk(a_i.theta);
+    calcPartitionValues(nn);
 
     weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
 
@@ -177,36 +97,29 @@ void Photon::scatter()
 	}
 
 
-	//binary search
+	//binary search of partition rect
 	int rectIdx = 0;
-	//int first = 0;
-	//int last = rects.size() - 1;
+	int first = 0;
+	int last = m_chunk->m_rects.size() - 1;
 
+	while (first < last) {
 
-/*	while (first <= last) {
+    	rectIdx = (first + last) / 2;
+       	if (randRect > m_rectValues[rectIdx]) {
 
-    	int mid = (first + last) / 2;
-       	if (randRect > rects[mid].val) {
-
-        	first = mid + 1;
+        	first = rectIdx + 1;
 	   	}
-       	else if (randRect < rects[mid].val) {
+       	else if (randRect < m_rectValues[rectIdx]) {
 
-        	last = mid - 1;
+        	last = rectIdx - 1;
 	   	}
        	else {
 
-        	rectIdx = mid;
            	break;
 	   	}
     }
-*/
-	while (randRect > m_rectValues[rectIdx]) {
 
-		rectIdx++;
-	}
-
-
+    //adjust point
 	Float p, t;
 	choosePointInRect(t, p, rectIdx, randX, randY);
 
@@ -221,6 +134,86 @@ void Photon::scatter()
 	s_i.normalize();  //to be sure
 
 	scatterings++;
+}
+
+void Photon::createTransformToPartitionCoords(Matrix3& mtx, Vector3& nn, Angle& a_i)
+{
+	Vector3 v2;
+	nn = Optics::director;
+
+	if (Angle(s_i, nn).costheta < 0) {
+
+	    nn = -nn;
+    }
+
+    a_i = Angle(s_i, nn);
+   
+	if (fabs(a_i.sintheta) > kMachineEpsilon) {
+
+		v2 = crossProduct(s_i, nn).normalize();
+	}
+	else {
+
+		v2 = createSomePerpendicular(s_i).normalize();
+	}
+
+	Vector3 v3 = crossProduct(s_i, v2).normalize();
+
+	mtx = createTransformMatrix(v2, v3, s_i);
+
+	nn = mtx*nn;                            //director in s_i -based coordinate system
+}
+
+void Photon::selectPartitionChunk(const Float theta)
+{
+    m_chunk = partition.getChunk(theta);
+}
+
+void Photon::calcPartitionValues(const Vector3& nn)
+{
+    IndicatrixEE ind = IndicatrixEE(Vector3(0., 0., 1.), nn);
+	
+	{
+		KnotsVector& knots = m_chunk->m_knots;
+		KnotsVector::iterator k;
+
+		m_knotValues.clear();
+
+		Float res;
+
+		for (k = knots.begin(); k != knots.end(); ++k) {
+
+			Float   sintheta = sin(k->x);
+			Vector3 s_s      = Vector3(  sintheta*cos(k->y),
+									     sintheta*sin(k->y),
+									     cos(k->x));
+
+	        res = sintheta*ind(s_s);
+			m_knotValues.push_back(res);
+		}
+	}
+
+	{
+    	RectsVector& rects = m_chunk->m_rects;
+
+		RectsVector::iterator i;
+		fullIntegral = 0.;
+
+		m_rectValues.clear();
+
+		for (i = rects.begin(); i != rects.end(); ++i) {
+
+			Float rectIntegral = 0.25* (m_knotValues[(*i).tl] +
+										m_knotValues[(*i).tr] +
+										m_knotValues[(*i).bl] +
+										m_knotValues[(*i).br]) *
+								(*i).square;
+
+			fullIntegral += rectIntegral;
+
+			m_rectValues.push_back(fullIntegral);
+		}
+	}
 }
 
 void Photon::choosePointInRect(Float& x, Float& y, const int rectNum, const Float randX, const Float randY)

@@ -226,39 +226,33 @@ int ScatMCApp::run()
 
     //main loop
 
-	bool ready = false;
-
 	#pragma omp parallel for
-	for (int i = 0; i < m_maxPhotons; ++i)
-		if (!ready) {
+	for (int i = 0; i < m_maxPhotons; ++i) {
 
-			Photon ph;
+		Photon ph;
 
-			while (ph.pos.z() >= 0.
-			        && ph.scatterings < m_maxScatterings
-			        && ph.weight > m_minPhotonWeight) {
+		while (ph.pos.z() >= 0.
+		        && ph.scatterings < m_maxScatterings
+		        && ph.weight > m_minPhotonWeight) {
 
-				ph.move();
+			ph.move();
 
-				processScattering(ph);
+			processScattering(ph);
 
-				ph.scatter();
+			ph.scatter();
 
-			}
-
-
-			#pragma omp critical
-			{
-				++m_photonCnt;
-				fprintf(stderr, "%d\t%d\n", m_photonCnt, ph.scatterings);
-
-				if (0 == m_photonCnt % 100)
-					ready = checkResultsReady();
-
-				if (0 == m_photonCnt % 2)
-                    output();
-			}
 		}
+
+
+		#pragma omp critical
+		{
+			++m_photonCnt;
+			fprintf(stderr, "Photon: %d\tScatterings: %d\n", m_photonCnt, ph.scatterings);
+
+			if (0 == m_photonCnt % kSaveRate)
+                output();
+		}
+	}
 
 	output();
 
@@ -271,7 +265,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 	if (0 == ph.scatterings)
 		return;
 
-	Indicatrix ind(ph.s_i, Optics::n);
+	IndicatrixEE ind(ph.s_i, Optics::director);
 
     #pragma omp critical
 	{
@@ -289,7 +283,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 								  sintheta_s*sin(phi_s),
 								  -costheta_s);
 
-			Angle a_s = Angle(s_s, Optics::n);
+			Angle a_s = Angle(s_s, Optics::director);
 
 			Float dist   = fabs(ph.pos.z() / s_s.z());
 			Float x      = ph.pos.x() + dist*s_s.x();
@@ -299,7 +293,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 			Vector3 R = Vector3(x, y, 0);
 #ifndef EXPERIMENTAL
-			Vector3 q = Optics::ke(s_s, Optics::n)*Optics::k0;
+			Vector3 q = Optics::EBeam::k(s_s, Optics::director)*Optics::k0;
 #else
             Vector3 q = Optics::k0*s_s;
 #endif
@@ -404,26 +398,6 @@ void ScatMCApp::output()
 	fclose(detallfile);
 }
 
-bool ScatMCApp::checkResultsReady()
-{
-	int size = kPhiSize*kThetaSize;
-	for (int i = 0; i < size; ++i) {
-
-		if (fabs((*lastdet)[i]) < kMachineEpsilon)
-			return false;
-
-		Float err =  fabs(((*detall)[i] - (*lastdet)[i]) / (*lastdet)[i]);
-		if (err > 0.01) {
-
-			fprintf(stderr, "relative error: %f\n", err);
-			memcpy(lastdet, detall, sizeof(lastdet));
-
-			return false;
-		}
-	}
-
-	return true;
-}
 
 void ScatMCApp::printHelp()
 {

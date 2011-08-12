@@ -40,19 +40,19 @@ bool FreePath::create(const int kThetaIterations /*= 1000*/,
 
 		theta_i = i*kResolution;
 		Angle   a_i = Angle(theta_i);
-		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
+		Vector3 s_i = createSomeDeviantVector(Optics::director, a_i).normalize();
 
 		//create coordinate system
 
-		v2 = crossProduct(s_i, Optics::n).normalize();
+		v2 = crossProduct(s_i, Optics::director).normalize();
 		v3 = crossProduct(v2, s_i);
 
 		Matrix3 mtx = invert(createTransformMatrix(s_i, v2, v3));
-		nn = mtx*Optics::n;
+		nn = mtx*Optics::director;
 
-		k_i = Vector3(1., 0., 0.)*Optics::ne(a_i);
+		k_i = Vector3(1., 0., 0.)*Optics::EBeam::n(a_i);
 
-		Indicatrix ind = Indicatrix(k_i, nn);
+		IndicatrixEE ind = IndicatrixEE(k_i, nn);
 
 		Float integral = 0.;
 
@@ -75,7 +75,7 @@ bool FreePath::create(const int kThetaIterations /*= 1000*/,
 					Angle a_s   = Angle(s_s, nn);
 
 					t_integral += sin(theta_s) * ind(s_s)*
-								Optics::cosde(a_s)/Optics::cosde(a_i)/Optics::f2(a_s) ;
+								Optics::EBeam::cosd(a_s)/Optics::EBeam::cosd(a_i)/Optics::EBeam::f2(a_s) ;
 				}
 			}
 

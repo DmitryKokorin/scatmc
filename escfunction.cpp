@@ -67,7 +67,7 @@ bool EscFunction::create(const FreePath& length,
 
             
             Vector3 s_i = Vector3(sint_i*cos(p_i), sint_i*sin(p_i), cost_i);
-            Indicatrix ind = Indicatrix(s_i, Optics::n);
+            IndicatrixEE ind = IndicatrixEE(s_i, Optics::director);
 
             for (ULong k = 0; k < zSize; ++k) {
 
@@ -94,7 +94,7 @@ bool EscFunction::create(const FreePath& length,
                         if (cost_s < -kMachineEpsilon) {
 
                             Float dist = z / cost_s;
-                            res += tmp*exp(dist/length(Angle(s_s, Optics::n)));
+                            res += tmp*exp(dist/length(Angle(s_s, Optics::director)));
                         }
                     }
                 }

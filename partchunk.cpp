@@ -193,20 +193,20 @@ void PartitionChunk::createPartitionTree()
 		Angle   a_i = Angle(m_minAngle + k*m_iterationStep);
 
 		//here we construct some k_i, that has a_i angle to director
-		Vector3 s_i = createSomeDeviantVector(Optics::n, a_i).normalize();
+		Vector3 s_i = createSomeDeviantVector(Optics::director, a_i).normalize();
 
 		//now we can create coordinate system
-		Vector3 v2 = crossProduct(s_i, Optics::n).normalize();
+		Vector3 v2 = crossProduct(s_i, Optics::director).normalize();
 		Vector3 v3 = crossProduct(s_i, v2).normalize();
 
 
 		//create matrix
 		Matrix3 mtx = createTransformMatrix(v2, v3, s_i);
 
-		Vector3 nn = mtx*Optics::n;
+		Vector3 nn = mtx*Optics::director;
 		Vector3 ss_i = Vector3(0., 0., 1.);
 
-		Indicatrix ind = Indicatrix(ss_i, nn);
+		IndicatrixEE ind = IndicatrixEE(ss_i, nn);
 
 		//calculate array values
 

@@ -5,11 +5,12 @@ namespace Optics {
 
 //physical constants
 
-const Vector3 n = Vector3(1., 0., 0.);	
+const Vector3 director = Vector3(1., 0., 0.);	
 
 const Float eps_par = 3.0;
 const Float eps_perp = 2.2;
 const Float eps_a = eps_par - eps_perp;
+const Float _no = sqrt(eps_perp);
 
 const Float K3 = 6.1e-7;
 const Float t1 = 0.79;
