@@ -1,21 +1,9 @@
-#ifndef _FREEPATH_H 
-#define _FREEPATH_H_
+#ifndef _CHANNEL_H_
 
-#include <omp.h>
-
-#include "common.h"
-#include "mathcompat.h"
-#include "optics.h"
-#include "indicatrix.h"
-#include "coords.h"
-#include "linterpol.h"
-
-
-Float symmetrizeTheta(const Float theta);
-
+#define _CHANNEL_H_
 
 template <class T>
-void createFreePath(LinearInterpolation& li, const int kPoints = 400, const int kThetaIterations = 1000, const int kPhiIterations = 1000)
+void createEChannelProb(LinearInterpolation& li, const int kPoints = 400, const int kThetaIterations = 1000, const int kPhiIterations = 1000)
 {
 
     li.resize(kPoints);
@@ -25,7 +13,7 @@ void createFreePath(LinearInterpolation& li, const int kPoints = 400, const int 
 #ifdef EXPERIMENTAL
    	for (int i = 0; i < kPoints; ++i) {
 
-   	    li[i] = Optics::l;
+   	    li[i] = 1.0;
     }
 #else
 
@@ -55,36 +43,44 @@ void createFreePath(LinearInterpolation& li, const int kPoints = 400, const int 
         Indicatrix<T, Optics::OBeam> indO = Indicatrix<T, Optics::OBeam>(Vector3(1., 0., 0.), nn);
 		Indicatrix<T, Optics::EBeam> indE = Indicatrix<T, Optics::EBeam>(Vector3(1., 0., 0.), nn);
 
-		Float integral = 0.;
+		Float oIntegral = 0.;
+		Float eIntegral = 0.;
 
 		#pragma omp parallel
 		{
-			Float t_integral = 0;
+			Float t_oIntegral = 0.;
+			Float t_eIntegral = 0.;
 
 			#pragma omp for
 			for (int j = 0; j < kThetaIterations; ++j) {
 
 				Float theta_s = j*kThetaStep;
 				Float phi_s   = 0.;
+				Float sintheta_s = sin(theta_s);
+				Float costheta_s = cos(theta_s);
+
 
 				for (int k = 0; k < kPhiIterations; ++k, phi_s += kPhiStep) {
 
-					Vector3 s_s = Vector3(  cos(theta_s),
-											sin(theta_s)*sin(phi_s),
-											sin(theta_s)*cos(phi_s));
+					Vector3 s_s = Vector3(  costheta_s,
+											sintheta_s*sin(phi_s),
+											sintheta_s*cos(phi_s));
 
 					Angle a_s   = Angle(s_s, nn);
 
-					t_integral += sin(theta_s) * (  indO(s_s)*Optics::OBeam::cosd(a_s)/Optics::OBeam::f2(a_s) +
-					                                indE(s_s)*Optics::EBeam::cosd(a_s)/Optics::EBeam::f2(a_s) ) /T::cosd(a_i);
+					t_oIntegral += sintheta_s * indO(s_s);
+					t_eIntegral += sintheta_s * indE(s_s);
 				}
 			}
 
             #pragma omp critical
-			integral += t_integral;
+            {
+			    oIntegral += t_oIntegral;
+			    eIntegral += t_eIntegral;
+            }
 		}
 
-		li[i] = 1./(integral*kThetaStep*kPhiStep);
+		li[i] = eIntegral /(eIntegral + oIntegral);
 	}
 
 	li[0] = li[1];
@@ -93,4 +89,5 @@ void createFreePath(LinearInterpolation& li, const int kPoints = 400, const int 
 }
 
 
-#endif /* _FREEPATH_H_ */
+#endif /* end of include guard: _CHANNEL_H_ */
+

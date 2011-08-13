@@ -46,7 +46,7 @@ Indicatrix<T1, T2>::Indicatrix(const Vector3& s_i_, const Vector3& director_i_) 
 	factor1()
 {
 	k_i  = T1::k(s_i, a_i);
-	e_i  = T1::e(k_i, director_i, a_i);
+	e_i  = T1::e(s_i, director_i, a_i);
 
 	ei_n = e_i*director_i;
 	factor1 = Optics::s0/(T1::n(a_i)*T1::cosd(a_i));
@@ -78,7 +78,7 @@ Float Indicatrix<T1, T2>::operator()(const Vector3& s_s)
 	Vector3 a2 = crossProduct(director_i, a1);
 	a2.normalize();   //to be sure
 	
-	Vector3 e_s  = T2::e(k_s, director_i, a_s);
+	Vector3 e_s  = T2::e(s_s, director_i, a_s);
 	Float   es_n = e_s*director_i;
 
 	Float es_a1, es_a2, ei_a1, ei_a2;
@@ -97,6 +97,10 @@ Float Indicatrix<T1, T2>::operator()(const Vector3& s_s)
 }
 
 typedef Indicatrix<Optics::EBeam, Optics::EBeam> IndicatrixEE;
+typedef Indicatrix<Optics::EBeam, Optics::OBeam> IndicatrixEO;
+typedef Indicatrix<Optics::OBeam, Optics::EBeam> IndicatrixOE;
+typedef Indicatrix<Optics::OBeam, Optics::OBeam> IndicatrixOO;  //should always be equal to 0.
+
 
 
 #endif /* _INDICATRIX_H_ */

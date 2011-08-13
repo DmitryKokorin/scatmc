@@ -27,7 +27,7 @@ EscFunction::~EscFunction()
 //    free3dArray(m_array);
 }
 
-bool EscFunction::create(const FreePathEE& length,
+bool EscFunction::create(const LinearInterpolation& length,
                          const ULong thetaSize,
                          const ULong phiSize,
                          const ULong zSize,
@@ -94,7 +94,8 @@ bool EscFunction::create(const FreePathEE& length,
                         if (cost_s < -kMachineEpsilon) {
 
                             Float dist = z / cost_s;
-                            res += tmp*exp(dist/length(Angle(s_s, Optics::director)));
+
+                            res += tmp*exp(dist/length(symmetrizeTheta(Angle(s_s, Optics::director).theta)));
                         }
                     }
                 }
@@ -133,9 +134,6 @@ Float EscFunction::operator()(const Float theta, const Float phi, const Float z)
         return m_array[zIdx][phiIdx][thetaIdx];
 
     Float mu = z - zIdx*m_zStep;
-
-//    fprintf(stderr, "%d\t%d\t%d\n", zIdx, phiIdx, thetaIdx);
-//    fprintf(stderr, "%.17e\t%.17e\n", theta, m_thetaStep);
 
     return (1. - mu)*m_array[zIdx][phiIdx][thetaIdx] +
                  mu* m_array[zIdx+1][phiIdx][thetaIdx];

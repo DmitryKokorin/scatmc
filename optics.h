@@ -58,8 +58,17 @@ inline Float HenyeyGreenstein(const Float ct)
 
 /////////////////////////////////////////////////////
 
+enum Channel
+{
+    OCHANNEL,
+    ECHANNEL
+};
+
+
 class OBeam {
 public:    
+
+    static const int channel = OCHANNEL;
 
     static inline Float n(const Angle& /*a*/)
     {
@@ -81,16 +90,17 @@ public:
 	    return 1.0;
     }
 
-    //s is a unit vector, s = k/|k|
-    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& /*a*/)
+    static inline Vector3 e(const Vector3& s, const Vector3& director_, const Angle& /*a*/)
     {
-	    return crossProduct(k, nn).normalize();
+	    return crossProduct(s, director_).normalize();
     }
 };
 
 
 class EBeam {
 public:
+
+    static const int channel = ECHANNEL;
 
     //refraction index
     static inline Float n(const Angle& a)
@@ -104,11 +114,6 @@ public:
     	return Vector3(direction).normalize()*nn;
     }
 
-/*    static inline Vector3 k(const Vector3& direction, const Vector3& nn)
-    {
-	    return k(direction, Angle(direction, nn));
-    }
-*/
     static inline Float cosd(const Angle& a)
     {
 	    return (eps_perp*a.sin2theta + eps_par*a.cos2theta) /                               \
@@ -123,26 +128,19 @@ public:
     }
 
     //polarization vector
-
-    //s is a unit vector, s = k/|k|
-    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& a)
+//    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& a)
+    static inline Vector3 e(const Vector3& s, const Vector3& director_, const Angle& a)
     {
 	    if (fabs(a.sintheta) > kMachineEpsilon) {
 
-		    Vector3 s = Vector3(k).normalize();
-		    return (s*eps_par*a.costheta - nn*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
+		    //Vector3 s = Vector3(k).normalize();
+		    return (s*eps_par*a.costheta - director_*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
 	    }
     	else { //along the optical axis, so we use the expression for the ordinary beam polarization
 
-		    //return crossProduct(k, nn).normalize();
-		    return Optics::OBeam::e(k, nn, a);
+		    return Optics::OBeam::e(s, director_, a);
 	    }
     }
-
-/*  static inline Vector3 e(const Vector3& s, const Vector3& n)
-    {
-	    return e(s, n, Angle(s, n));
-    }*/
 };
 
 

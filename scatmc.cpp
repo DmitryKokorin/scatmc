@@ -6,6 +6,7 @@
 #include "common.h"
 
 #include "freepath.h"
+#include "channel.h"
 #include "partition.h"
 #include "escfunction.h"
 #include "photon.h"
@@ -44,16 +45,28 @@ const Float ScatMCApp::kPhiStep   = 2*M_PI / ScatMCApp::kPhiSize;
 ScatMCApp::ScatMCApp() :
     m_workDir(),
 	m_executableFileName(),
-	m_freePathFileName(),
+	m_oFreePathFileName(),
+	m_eFreePathFileName(),
+	m_oChannelProbFileName(),
+	m_eChannelProbFileName(),
 	m_partitionFileName(),
 	m_escFunctionFileName(),
-	m_loadFreePath(false),
-	m_saveFreePath(false),
+	m_loadOFreePath(false),
+	m_saveOFreePath(false),
+	m_loadEFreePath(false),
+	m_saveEFreePath(false),
+	m_loadOChannelProb(false),
+	m_saveOChannelProb(false),
+	m_loadEChannelProb(false),
+	m_saveEChannelProb(false),
 	m_loadPartition(false),
 	m_savePartition(false),
 	m_loadEscFunction(false),
 	m_saveEscFunction(false),
-	m_length(),
+	m_eLength(),
+	m_oLength(),
+	m_oChannelProb(),
+	m_eChannelProb(),
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(100000),
@@ -92,16 +105,49 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 			m_workDir = argv[i];
 		}
-		else if(!strcmp(argv[i], "--loadfreepath")) {
+		else if(!strcmp(argv[i], "--loadofreepath")) {
 
-			if (m_saveFreePath)
+			if (m_saveOFreePath)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_loadFreePath     = true;
-			m_freePathFileName = argv[i];
+			m_loadOFreePath     = true;
+			m_oFreePathFileName = argv[i];
+		}
+		else if(!strcmp(argv[i], "--loadefreepath")) {
+
+			if (m_saveEFreePath)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadEFreePath     = true;
+			m_eFreePathFileName = argv[i];
+		}
+		else if(!strcmp(argv[i], "--loadochannelprob")) {
+
+			if (m_saveOChannelProb)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadOChannelProb     = true;
+			m_oChannelProbFileName = argv[i];
+		}
+		else if(!strcmp(argv[i], "--loadechannelprob")) {
+
+			if (m_saveEChannelProb)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadEChannelProb     = true;
+			m_eChannelProbFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--loadpartition")) {
 
@@ -125,16 +171,52 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadEscFunction     = true;
 			m_escFunctionFileName = argv[i];
 		}
-		else if (!strcmp(argv[i], "--savefreepath")) {
+		else if (!strcmp(argv[i], "--saveofreepath")) {
 
-			if (m_loadFreePath)
+			if (m_loadOFreePath)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_saveFreePath     = true;
-			m_freePathFileName = argv[i];
+			m_saveOFreePath     = true;
+			m_oFreePathFileName = argv[i];
+
+		}
+		else if (!strcmp(argv[i], "--saveefreepath")) {
+
+			if (m_loadEFreePath)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveEFreePath     = true;
+			m_eFreePathFileName = argv[i];
+
+		}
+		else if (!strcmp(argv[i], "--saveochannelprob")) {
+
+			if (m_loadOChannelProb)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveOChannelProb     = true;
+			m_oChannelProbFileName = argv[i];
+
+		}
+		else if (!strcmp(argv[i], "--saveechannelprob")) {
+
+			if (m_loadEChannelProb)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveEChannelProb     = true;
+			m_eChannelProbFileName = argv[i];
 
 		}
 		else if (!strcmp(argv[i], "--savepartition")) {
@@ -188,10 +270,28 @@ int ScatMCApp::run()
 	int res = 0;
 
     //free path
-	res = prepareFreePath(m_length);
+   	res = prepareOFreePath(m_oLength);
 
 	if (0 != res)
 		return res;
+
+	res = prepareEFreePath(m_eLength);
+
+	if (0 != res)
+		return res;
+
+	//channel probabilities
+   	res = prepareOChannelProb(m_oChannelProb);
+
+	if (0 != res)
+		return res;
+
+	res = prepareEChannelProb(m_eChannelProb);
+
+	if (0 != res)
+		return res;
+
+	
 
     //partition
 #ifdef EXPERIMENTAL
@@ -214,14 +314,13 @@ int ScatMCApp::run()
 	
     EscFunction escFunction;
     res = prepareEscFunction(escFunction);
-
     if (0 != res)
         return res;
 
 
 
 	fprintf(stderr, "scattering...\n");
-	Photon::init(&m_length, &p, &escFunction, getSeed());
+	Photon::init(&m_eLength, &p, &escFunction, getSeed());
 
 
     //main loop
@@ -289,7 +388,7 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float x      = ph.pos.x() + dist*s_s.x();
 			Float y      = ph.pos.y() + dist*s_s.y();
 
-			Float lengthFactor = exp(-dist/m_length(a_s));
+			Float lengthFactor = exp(-dist/m_eLength(symmetrizeTheta(a_s.theta)));
 
 			Vector3 R = Vector3(x, y, 0);
 #ifndef EXPERIMENTAL
@@ -405,10 +504,16 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n\nAvailable options:");
 	fprintf(stderr, "\n--seed [seed]\t\t\t\tseed for random numbers generator");
 	fprintf(stderr, "\n--workdir [path]\t\t\toutput path");
-	fprintf(stderr, "\n--loadfreepath [filename]\t\tload extinction lengths from file");
+	fprintf(stderr, "\n--loadofreepath [filename]\t\tload o-beam free path from file");
+	fprintf(stderr, "\n--loadefreepath [filename]\t\tload e-beam free path from file");
+	fprintf(stderr, "\n--loadochannelprob [filename]\t\tload o-e probability from file");
+	fprintf(stderr, "\n--loadechannelprob [filename]\t\tload e-e probability from file");
 	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
 	fprintf(stderr, "\n--loadescfunction [filename]\t\tload escape function from file");
-	fprintf(stderr, "\n--savefreepath [filename]\t\tsave extinction lengths to file");
+	fprintf(stderr, "\n--saveofreepath [filename]\t\tsave o-beam free path to file");
+	fprintf(stderr, "\n--saveefreepath [filename]\t\tsave e-beam free path to file");
+	fprintf(stderr, "\n--saveochannelprob [filename]\t\tsave o-e probability to file");
+	fprintf(stderr, "\n--saveechannelprob [filename]\t\tsave e-e probability to file");
 	fprintf(stderr, "\n--savepartition [filename]\t\tsave partition to file");
 	fprintf(stderr, "\n--saveescfunction [filename]\t\tsave escape function to file");
 	fprintf(stderr, "\n--photons [photons]\t\t\tnumber of photons to scatter");
@@ -416,15 +521,15 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n");
 }
 
-int ScatMCApp::prepareFreePath(FreePathEE& l)
+int ScatMCApp::prepareOFreePath(LinearInterpolation& l)
 {
-	if (isLoadFreePath()) {
+	if (isLoadOFreePath()) {
 
-		fprintf(stderr, "loading free path file...");
+		fprintf(stderr, "loading o-beam free path file...");
 
-		if (!l.load(getFreePathFileName())) {
+		if (!l.load(getOFreePathFileName())) {
 
-			fprintf(stderr, "can't load free path data\n");
+			fprintf(stderr, "can't load o-beam free path data\n");
 			return -1;
 		}
 		else {
@@ -434,17 +539,17 @@ int ScatMCApp::prepareFreePath(FreePathEE& l)
 	}
 	else {
 
-		fprintf(stderr, "calculating free path data...\n");
-		l.create();
+		fprintf(stderr, "calculating o-beam free path data...\n");
+		createFreePath<Optics::OBeam>(l);
 	}
 
-	if (isSaveFreePath()) {
+	if (isSaveOFreePath()) {
 
-		fprintf(stderr, "saving free path data to file...");
+		fprintf(stderr, "saving o-beam free path data to file...");
 
-		if (!l.save(getFreePathFileName())) {
+		if (!l.save(getOFreePathFileName())) {
 
-			fprintf(stderr, "can't save free path data\n");
+			fprintf(stderr, "can't save o-beam free path data\n");
 			return -1;
 		}
 		else {
@@ -455,6 +560,129 @@ int ScatMCApp::prepareFreePath(FreePathEE& l)
 
 	return 0;
 }
+
+
+int ScatMCApp::prepareEFreePath(LinearInterpolation& l)
+{
+	if (isLoadEFreePath()) {
+
+		fprintf(stderr, "loading e-beam free path file...");
+
+		if (!l.load(getEFreePathFileName())) {
+
+			fprintf(stderr, "can't load e-beam free path data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "calculating e-beam free path data...\n");
+		createFreePath<Optics::EBeam>(l);
+	}
+
+	if (isSaveEFreePath()) {
+
+		fprintf(stderr, "saving e-beam free path data to file...");
+
+		if (!l.save(getEFreePathFileName())) {
+
+			fprintf(stderr, "can't save e-beam free path data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+int ScatMCApp::prepareOChannelProb(LinearInterpolation& l)
+{
+	if (isLoadOChannelProb()) {
+
+		fprintf(stderr, "loading o-e probability file...");
+
+		if (!l.load(getOChannelProbFileName())) {
+
+			fprintf(stderr, "can't load o-e probability data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "calculating o-e probability data...\n");
+		createEChannelProb<Optics::OBeam>(l);
+	}
+
+	if (isSaveOChannelProb()) {
+
+		fprintf(stderr, "saving o-e probability data to file...");
+
+		if (!l.save(getOChannelProbFileName())) {
+
+			fprintf(stderr, "can't save o-e probability data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+
+int ScatMCApp::prepareEChannelProb(LinearInterpolation& l)
+{
+	if (isLoadEChannelProb()) {
+
+		fprintf(stderr, "loading e-e probability file...");
+
+		if (!l.load(getEChannelProbFileName())) {
+
+			fprintf(stderr, "can't load e-e probability data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "calculating e-e probability data...\n");
+		createEChannelProb<Optics::EBeam>(l);
+	}
+
+	if (isSaveEChannelProb()) {
+
+		fprintf(stderr, "saving e-e probability data to file...");
+
+		if (!l.save(getEChannelProbFileName())) {
+
+			fprintf(stderr, "can't save e-e probability data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
 
 int ScatMCApp::preparePartition(Partition& p)
 {
@@ -525,9 +753,9 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 
 		fprintf(stderr, "creating escape function...\n");
 #ifdef EXPERIMENTAL
-        esc.create(m_length, 180, 1, 301, 15.*Optics::l, 3600, 100);
+        esc.create(m_eLength, 180, 1, 301, 15.*Optics::l, 3600, 100);
 #else
-        esc.create(m_length, 90, 90, 200, 1., 800, 800);
+        esc.create(m_eLength, 90, 90, 200, 1., 800, 800);
 #endif
 	}
 

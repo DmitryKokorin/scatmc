@@ -12,7 +12,8 @@
 #include "vector3.h"
 #include "matrix3.h"
 
-class ExtLength;
+//class ExtLength;
+class LinearInterpolation;
 class Partition;
 class PartitionChunk;
 class EscFunction;
@@ -28,19 +29,20 @@ class Photon
 {
 public:
 
-	Photon();
-    static void init(FreePathEE* length, Partition* partition, EscFunction* escFunction,
+	Photon(const Vector3& s = Vector3(0., 0., 1.), const int channel_ = Optics::ECHANNEL);
+    static void init(LinearInterpolation* length, Partition* partition, EscFunction* escFunction,
             unsigned long seed = 1000);
 
 	void move();
 	void scatter();
 
-	Vector3   pos;
-	Vector3   s_i;
+	Vector3   pos;  //position
+	Vector3   s_i;  //normalized wave vector
 
-	int scatterings;
+	int   scatterings;
 	Float weight;
 	Float fullIntegral;
+	int   channel;
 
 protected:
 
@@ -55,14 +57,14 @@ protected:
 	static inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
 
 
-	static FreePathEE* s_length;
-	static Partition* s_partition;
-	static EscFunction* s_escFunction;
+	static LinearInterpolation* s_length;
+	static Partition*           s_partition;
+	static EscFunction*         s_escFunction;
 
     //these are to simulate static behavior for a reference (without ugly pointer syntax)
-	FreePathEE& length;
-	Partition& partition;
-	EscFunction& escFunction;
+	LinearInterpolation&    length;
+	Partition&              partition;
+	EscFunction&            escFunction;
 
 
 	PartitionChunk *m_chunk;

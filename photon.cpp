@@ -11,16 +11,16 @@
 
 
 
-FreePathEE*		Photon::s_length        = NULL;
-Partition*		Photon::s_partition     = NULL;
-EscFunction*	Photon::s_escFunction	= NULL;
+LinearInterpolation*	Photon::s_length        = NULL;
+Partition*		        Photon::s_partition     = NULL;
+EscFunction*	        Photon::s_escFunction	= NULL;
 
 
 RngEngine	Photon::rng_engine	= RngEngine();
 
 
 
-void Photon::init(	FreePathEE* length_,
+void Photon::init(	LinearInterpolation* length_,
 					Partition* partition_,
 					EscFunction* escFunction_,
 					unsigned long seed_)
@@ -33,12 +33,13 @@ void Photon::init(	FreePathEE* length_,
 }
 
 
-Photon::Photon() :
+Photon::Photon(const Vector3& s, const int channel_) :
 	pos(0.,0.,0.),
-	s_i(0., 0., 1.),
+	s_i(s),
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
+	channel(channel_),
 	length(*s_length),
 	partition(*s_partition),
 	escFunction(*s_escFunction),
@@ -54,7 +55,9 @@ Photon::Photon() :
 void Photon::move()
 {
 	Float rnd;
-	Float meanFreePath = length(Angle(s_i, Optics::director));
+    Float theta = symmetrizeTheta(Angle(s_i, Optics::director).theta);
+
+	Float meanFreePath = length(theta);
 
     Float c1 = (s_i.z() >= 0) ? 1. : -expm1((pos.z()/s_i.z())/meanFreePath);
 

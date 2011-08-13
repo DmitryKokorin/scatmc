@@ -12,7 +12,7 @@ public:
     EscFunction();
     ~EscFunction();
 
-    bool create(const FreePathEE& lengths,
+    bool create(const LinearInterpolation& lengths,
                 const ULong thetaSize,
                 const ULong phiSize,
                 const ULong zSize,
