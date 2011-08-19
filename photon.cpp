@@ -1,6 +1,6 @@
 #include <omp.h>
 
-#include "freepath.h"
+
 #include "partition.h"
 #include "partchunk.h"
 #include "escfunction.h"
@@ -13,7 +13,7 @@
 
 LinearInterpolation*	Photon::s_length        = NULL;
 Partition*		        Photon::s_partition     = NULL;
-EscFunction*	        Photon::s_escFunction	= NULL;
+EscFunctionEE*	        Photon::s_escFunction	= NULL;
 
 
 RngEngine	Photon::rng_engine	= RngEngine();
@@ -22,7 +22,7 @@ RngEngine	Photon::rng_engine	= RngEngine();
 
 void Photon::init(	LinearInterpolation* length_,
 					Partition* partition_,
-					EscFunction* escFunction_,
+					EscFunctionEE* escFunction_,
 					unsigned long seed_)
 {
 	s_length      = length_;

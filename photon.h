@@ -12,12 +12,13 @@
 #include "vector3.h"
 #include "matrix3.h"
 
-//class ExtLength;
+
 class LinearInterpolation;
 class Partition;
 class PartitionChunk;
-class EscFunction;
+//class EscFunctionEE;
 class Angle;
+
 
 typedef std::vector<Float> ValuesVector;
 
@@ -30,7 +31,7 @@ class Photon
 public:
 
 	Photon(const Vector3& s = Vector3(0., 0., 1.), const int channel_ = Optics::ECHANNEL);
-    static void init(LinearInterpolation* length, Partition* partition, EscFunction* escFunction,
+    static void init(LinearInterpolation* length, Partition* partition, EscFunctionEE* escFunction,
             unsigned long seed = 1000);
 
 	void move();
@@ -59,12 +60,12 @@ protected:
 
 	static LinearInterpolation* s_length;
 	static Partition*           s_partition;
-	static EscFunction*         s_escFunction;
+	static EscFunctionEE*         s_escFunction;
 
     //these are to simulate static behavior for a reference (without ugly pointer syntax)
 	LinearInterpolation&    length;
 	Partition&              partition;
-	EscFunction&            escFunction;
+	EscFunctionEE&          escFunction;
 
 
 	PartitionChunk *m_chunk;

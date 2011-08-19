@@ -5,7 +5,7 @@
 #include "mathcompat.h"
 #include "common.h"
 
-#include "freepath.h"
+//#include "freepath.h"
 #include "channel.h"
 #include "partition.h"
 #include "escfunction.h"
@@ -312,7 +312,7 @@ int ScatMCApp::run()
 
 	//escape function
 	
-    EscFunction escFunction;
+    EscFunctionEE escFunction;
     res = prepareEscFunction(escFunction);
     if (0 != res)
         return res;
@@ -733,7 +733,7 @@ int ScatMCApp::preparePartition(Partition& p)
 }
 
 
-int ScatMCApp::prepareEscFunction(EscFunction& esc)
+int ScatMCApp::prepareEscFunction(EscFunctionEE& esc)
 {
 	if (isLoadEscFunction()) {
 
@@ -755,7 +755,7 @@ int ScatMCApp::prepareEscFunction(EscFunction& esc)
 #ifdef EXPERIMENTAL
         esc.create(m_eLength, 180, 1, 301, 15.*Optics::l, 3600, 100);
 #else
-        esc.create(m_eLength, 90, 90, 200, 1., 800, 800);
+        esc.create(m_eLength, 90, 90, 200, 1.);
 #endif
 	}
 

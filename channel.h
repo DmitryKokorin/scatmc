@@ -1,6 +1,12 @@
 #ifndef _CHANNEL_H_
-
 #define _CHANNEL_H_
+
+#include "common.h"
+#include "linterpol.h"
+#include "vector3.h"
+#include "matrix3.h"
+#include "optics.h"
+#include "indicatrix.h"
 
 template <class T>
 void createEChannelProb(LinearInterpolation& li, const int kPoints = 400, const int kThetaIterations = 1000, const int kPhiIterations = 1000)

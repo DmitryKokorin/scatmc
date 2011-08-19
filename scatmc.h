@@ -72,7 +72,7 @@ private:
     int  prepareEChannelProb(LinearInterpolation& prob);
 
 	int  preparePartition(Partition& partition);
-    int  prepareEscFunction(EscFunction& escFunction);
+    int  prepareEscFunction(EscFunctionEE& escFunction);
 
 	void processScattering(const Photon& ph);
 	void output();
