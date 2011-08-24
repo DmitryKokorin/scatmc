@@ -5,7 +5,6 @@
 #include "mathcompat.h"
 #include "common.h"
 
-//#include "freepath.h"
 #include "channel.h"
 #include "partition.h"
 #include "escfunction.h"
@@ -47,25 +46,30 @@ ScatMCApp::ScatMCApp() :
 	m_executableFileName(),
 	m_oFreePathFileName(),
 	m_eFreePathFileName(),
-	m_oChannelProbFileName(),
 	m_eChannelProbFileName(),
-	m_partitionFileName(),
-	m_escFunctionFileName(),
+	m_oePartitionFileName(),
+	m_eoPartitionFileName(),
+	m_eePartitionFileName(),
+	m_oEscFunctionFileName(),
+	m_eEscFunctionFileName(),
 	m_loadOFreePath(false),
 	m_saveOFreePath(false),
 	m_loadEFreePath(false),
 	m_saveEFreePath(false),
-	m_loadOChannelProb(false),
-	m_saveOChannelProb(false),
 	m_loadEChannelProb(false),
 	m_saveEChannelProb(false),
-	m_loadPartition(false),
-	m_savePartition(false),
-	m_loadEscFunction(false),
-	m_saveEscFunction(false),
+	m_loadOEPartition(false),
+	m_saveOEPartition(false),
+	m_loadEOPartition(false),
+	m_saveEOPartition(false),
+	m_loadEEPartition(false),
+	m_saveEEPartition(false),
+	m_loadOEscFunction(false),
+	m_saveOEscFunction(false),
+	m_loadEEscFunction(false),
+	m_saveEEscFunction(false),
 	m_eLength(),
 	m_oLength(),
-	m_oChannelProb(),
 	m_eChannelProb(),
 	m_seed(1000),
 	m_maxPhotons(1000),
@@ -127,17 +131,6 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadEFreePath     = true;
 			m_eFreePathFileName = argv[i];
 		}
-		else if(!strcmp(argv[i], "--loadochannelprob")) {
-
-			if (m_saveOChannelProb)
-				return false;
-
-			if (++i == argc)
-				return false;
-
-			m_loadOChannelProb     = true;
-			m_oChannelProbFileName = argv[i];
-		}
 		else if(!strcmp(argv[i], "--loadechannelprob")) {
 
 			if (m_saveEChannelProb)
@@ -149,27 +142,60 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadEChannelProb     = true;
 			m_eChannelProbFileName = argv[i];
 		}
-		else if (!strcmp(argv[i], "--loadpartition")) {
+		else if (!strcmp(argv[i], "--loadoepartition")) {
 
-			if (m_savePartition)
+			if (m_saveOEPartition)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_loadPartition     = true;
-			m_partitionFileName = argv[i];
+			m_loadOEPartition     = true;
+			m_oePartitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--loadeopartition")) {
+
+			if (m_saveEOPartition)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadEOPartition     = true;
+			m_eoPartitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--loadeepartition")) {
+
+			if (m_saveEEPartition)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadEEPartition     = true;
+			m_eePartitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--loadoescfunction")) {
+
+			if (m_saveOEscFunction)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadOEscFunction     = true;
+			m_oEscFunctionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--loadescfunction")) {
 
-			if (m_saveEscFunction)
+			if (m_saveEEscFunction)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_loadEscFunction     = true;
-			m_escFunctionFileName = argv[i];
+			m_loadEEscFunction     = true;
+			m_eEscFunctionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--saveofreepath")) {
 
@@ -195,18 +221,6 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_eFreePathFileName = argv[i];
 
 		}
-		else if (!strcmp(argv[i], "--saveochannelprob")) {
-
-			if (m_loadOChannelProb)
-				return false;
-
-			if (++i == argc)
-				return false;
-
-			m_saveOChannelProb     = true;
-			m_oChannelProbFileName = argv[i];
-
-		}
 		else if (!strcmp(argv[i], "--saveechannelprob")) {
 
 			if (m_loadEChannelProb)
@@ -219,27 +233,60 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_eChannelProbFileName = argv[i];
 
 		}
-		else if (!strcmp(argv[i], "--savepartition")) {
+		else if (!strcmp(argv[i], "--saveoepartition")) {
 
-			if (m_loadPartition)
+			if (m_loadOEPartition)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_savePartition     = true;
-			m_partitionFileName = argv[i];
+			m_saveOEPartition     = true;
+			m_oePartitionFileName = argv[i];
 		}
-		else if (!strcmp(argv[i], "--saveescfunction")) {
+		else if (!strcmp(argv[i], "--saveeopartition")) {
 
-			if (m_loadEscFunction)
+			if (m_loadEOPartition)
 				return false;
 
 			if (++i == argc)
 				return false;
 
-			m_saveEscFunction     = true;
-			m_escFunctionFileName = argv[i];
+			m_saveEOPartition     = true;
+			m_eoPartitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--saveeepartition")) {
+
+			if (m_loadEEPartition)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveEEPartition     = true;
+			m_eePartitionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--saveoescfunction")) {
+
+			if (m_loadOEscFunction)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveOEscFunction     = true;
+			m_oEscFunctionFileName = argv[i];
+		}
+		else if (!strcmp(argv[i], "--saveeescfunction")) {
+
+			if (m_loadEEscFunction)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveEEscFunction     = true;
+			m_eEscFunctionFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--photons")) {
 
@@ -281,11 +328,6 @@ int ScatMCApp::run()
 		return res;
 
 	//channel probabilities
-   	res = prepareOChannelProb(m_oChannelProb);
-
-	if (0 != res)
-		return res;
-
 	res = prepareEChannelProb(m_eChannelProb);
 
 	if (0 != res)
@@ -302,25 +344,41 @@ int ScatMCApp::run()
     Float chunkStep = 0.5*M_PI / numChunks;
 
     for (int i = 1; i <= numChunks; ++i)
-        m_chunkParams.push_back(ChunkParam(i*chunkStep, 100));
+        m_chunkParams.push_back(ChunkParam(i*chunkStep, 20));
     
-	Partition p;
-	res = preparePartition(p);
+	Partition pOE, pEO, pEE;
+
+	res = prepareOEPartition(pOE);
 
 	if (0 != res)
 		return res;
 
+	res = prepareEOPartition(pEO);
+
+	if (0 != res)
+		return res;
+
+	res = prepareEEPartition(pEE);
+
+	if (0 != res)
+		return res;
+
+
+
 	//escape function
 	
-    EscFunctionEE escFunction;
-    res = prepareEscFunction(escFunction);
+    EscFunction eEscFunction;
+    res = prepareEEscFunction(eEscFunction);
     if (0 != res)
         return res;
 
-
+    EscFunction oEscFunction;
+    res = prepareOEscFunction(oEscFunction);
+    if (0 != res)
+        return res;
 
 	fprintf(stderr, "scattering...\n");
-	Photon::init(&m_eLength, &p, &escFunction, getSeed());
+	Photon::init(&m_oLength, &m_eLength, &pOE, &pEO, &pEE, &oEscFunction, &eEscFunction, &m_eChannelProb, getSeed());
 
 
     //main loop
@@ -506,10 +564,12 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n--workdir [path]\t\t\toutput path");
 	fprintf(stderr, "\n--loadofreepath [filename]\t\tload o-beam free path from file");
 	fprintf(stderr, "\n--loadefreepath [filename]\t\tload e-beam free path from file");
-	fprintf(stderr, "\n--loadochannelprob [filename]\t\tload o-e probability from file");
 	fprintf(stderr, "\n--loadechannelprob [filename]\t\tload e-e probability from file");
-	fprintf(stderr, "\n--loadpartition [filename]\t\tload partition from file");
-	fprintf(stderr, "\n--loadescfunction [filename]\t\tload escape function from file");
+	fprintf(stderr, "\n--loadoepartition [filename]\t\tload o-e partition from file");
+	fprintf(stderr, "\n--loadeopartition [filename]\t\tload e-o partition from file");
+	fprintf(stderr, "\n--loadeepartition [filename]\t\tload e-e partition from file");
+	fprintf(stderr, "\n--loadoescfunction [filename]\t\tload o-escape function from file");
+	fprintf(stderr, "\n--loadeescfunction [filename]\t\tload e-escape function from file");
 	fprintf(stderr, "\n--saveofreepath [filename]\t\tsave o-beam free path to file");
 	fprintf(stderr, "\n--saveefreepath [filename]\t\tsave e-beam free path to file");
 	fprintf(stderr, "\n--saveochannelprob [filename]\t\tsave o-e probability to file");
@@ -602,45 +662,6 @@ int ScatMCApp::prepareEFreePath(LinearInterpolation& l)
 	return 0;
 }
 
-int ScatMCApp::prepareOChannelProb(LinearInterpolation& l)
-{
-	if (isLoadOChannelProb()) {
-
-		fprintf(stderr, "loading o-e probability file...");
-
-		if (!l.load(getOChannelProbFileName())) {
-
-			fprintf(stderr, "can't load o-e probability data\n");
-			return -1;
-		}
-		else {
-
-			fprintf(stderr, "\tdone\n");
-		}
-	}
-	else {
-
-		fprintf(stderr, "calculating o-e probability data...\n");
-		createEChannelProb<Optics::OBeam>(l);
-	}
-
-	if (isSaveOChannelProb()) {
-
-		fprintf(stderr, "saving o-e probability data to file...");
-
-		if (!l.save(getOChannelProbFileName())) {
-
-			fprintf(stderr, "can't save o-e probability data\n");
-			return -1;
-		}
-		else {
-
-			fprintf(stderr, "\tdone\n");
-		}
-	}
-
-	return 0;
-}
 
 
 int ScatMCApp::prepareEChannelProb(LinearInterpolation& l)
@@ -684,15 +705,15 @@ int ScatMCApp::prepareEChannelProb(LinearInterpolation& l)
 }
 
 
-int ScatMCApp::preparePartition(Partition& p)
+int ScatMCApp::prepareEEPartition(Partition& p)
 {
-	if (isLoadPartition()) {
+	if (isLoadEEPartition()) {
 
-		fprintf(stderr, "loading partition...");
+		fprintf(stderr, "loading e-e partition...");
 
-		if (!p.load(getPartitionFileName())) {
+		if (!p.load(getEEPartitionFileName())) {
 
-			fprintf(stderr, "can't load partition\n");
+			fprintf(stderr, "can't load e-e partition\n");
 			return -1;
 		}
 		else {
@@ -702,25 +723,73 @@ int ScatMCApp::preparePartition(Partition& p)
 	}
 	else {
 
-		fprintf(stderr, "creating partition...\n");
+		fprintf(stderr, "creating e-e partition...\n");
 
         Float leftBorder = 0.;
         ChunkParamsList::iterator i;
         for (i = m_chunkParams.begin(); i != m_chunkParams.end(); ++i) {
 
-            p.addChunk(leftBorder, i->first, i->second);
+            p.addChunk<IndicatrixEE>(leftBorder, i->first, i->second);
             leftBorder = i->first;
         }
 
 	}
 
-	if (isSavePartition()) {
+	if (isSaveEEPartition()) {
 
-		fprintf(stderr, "saving partition...");
+		fprintf(stderr, "saving e-e partition...");
 
-		if (!p.save(getPartitionFileName())) {
+		if (!p.save(getEEPartitionFileName())) {
 
-			fprintf(stderr, "can't save partition\n");
+			fprintf(stderr, "can't save e-e partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+int ScatMCApp::prepareOEPartition(Partition& p)
+{
+	if (isLoadOEPartition()) {
+
+		fprintf(stderr, "loading o-e partition...");
+
+		if (!p.load(getOEPartitionFileName())) {
+
+			fprintf(stderr, "can't load o-e partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "creating o-e partition...\n");
+
+        Float leftBorder = 0.;
+        ChunkParamsList::iterator i;
+        for (i = m_chunkParams.begin(); i != m_chunkParams.end(); ++i) {
+
+            p.addChunk<IndicatrixOE>(leftBorder, i->first, i->second);
+            leftBorder = i->first;
+        }
+
+	}
+
+	if (isSaveOEPartition()) {
+
+		fprintf(stderr, "saving o-e partition...");
+
+		if (!p.save(getOEPartitionFileName())) {
+
+			fprintf(stderr, "can't save o-e partition\n");
 			return -1;
 		}
 		else {
@@ -733,15 +802,15 @@ int ScatMCApp::preparePartition(Partition& p)
 }
 
 
-int ScatMCApp::prepareEscFunction(EscFunctionEE& esc)
+int ScatMCApp::prepareEOPartition(Partition& p)
 {
-	if (isLoadEscFunction()) {
+	if (isLoadEOPartition()) {
 
-		fprintf(stderr, "loading escape function...");
+		fprintf(stderr, "loading e-o partition...");
 
-		if (!esc.load(getEscFunctionFileName())) {
+		if (!p.load(getEOPartitionFileName())) {
 
-			fprintf(stderr, "can't load escape function\n");
+			fprintf(stderr, "can't load e-o partition\n");
 			return -1;
 		}
 		else {
@@ -751,21 +820,115 @@ int ScatMCApp::prepareEscFunction(EscFunctionEE& esc)
 	}
 	else {
 
-		fprintf(stderr, "creating escape function...\n");
+		fprintf(stderr, "creating e-o partition...\n");
+
+        Float leftBorder = 0.;
+        ChunkParamsList::iterator i;
+        for (i = m_chunkParams.begin(); i != m_chunkParams.end(); ++i) {
+
+            p.addChunk<IndicatrixEO>(leftBorder, i->first, i->second);
+            leftBorder = i->first;
+        }
+
+	}
+
+	if (isSaveEOPartition()) {
+
+		fprintf(stderr, "saving e-o partition...");
+
+		if (!p.save(getEOPartitionFileName())) {
+
+			fprintf(stderr, "can't save e-o partition\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+
+
+int ScatMCApp::prepareEEscFunction(EscFunction& esc)
+{
+	if (isLoadEEscFunction()) {
+
+		fprintf(stderr, "loading e-escape function...");
+
+		if (!esc.load(getEEscFunctionFileName())) {
+
+			fprintf(stderr, "can't load e-escape function\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "creating e-escape function...\n");
 #ifdef EXPERIMENTAL
-        esc.create(m_eLength, 180, 1, 301, 15.*Optics::l, 3600, 100);
+        esc.create<Optics::EBeam>(m_oLength, m_eLength, 180, 1, 301, 15.*Optics::l);
 #else
-        esc.create(m_eLength, 90, 90, 200, 1.);
+        esc.create<Optics::EBeam>(m_oLength, m_eLength, 90, 90, 200, 1.);
 #endif
 	}
 
-	if (isSaveEscFunction()) {
+	if (isSaveEEscFunction()) {
 
-		fprintf(stderr, "saving escape function...");
+		fprintf(stderr, "saving e-escape function...");
 
-		if (!esc.save(getEscFunctionFileName())) {
+		if (!esc.save(getEEscFunctionFileName())) {
 
-			fprintf(stderr, "can't save escape function\n");
+			fprintf(stderr, "can't save e-escape function\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+int ScatMCApp::prepareOEscFunction(EscFunction& esc)
+{
+	if (isLoadOEscFunction()) {
+
+		fprintf(stderr, "loading o-escape function...");
+
+		if (!esc.load(getOEscFunctionFileName())) {
+
+			fprintf(stderr, "can't load o-escape function\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "creating o-escape function...\n");
+#ifdef EXPERIMENTAL
+        esc.create<Optics::OBeam>(m_oLength, m_eLength, 180, 1, 301, 15.*Optics::l);
+#else
+        esc.create<Optics::OBeam>(m_oLength, m_eLength, 90, 90, 200, 1.);
+#endif
+	}
+
+	if (isSaveOEscFunction()) {
+
+		fprintf(stderr, "saving o-escape function...");
+
+		if (!esc.save(getOEscFunctionFileName())) {
+
+			fprintf(stderr, "can't save o-escape function\n");
 			return -1;
 		}
 		else {

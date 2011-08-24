@@ -69,18 +69,6 @@ bool Partition::save(const std::string& name)
     return true;
 }
 
-PartitionChunk* Partition::addChunk(const Float kMinAngle, const Float kMaxAngle, const int kIterations)
-{
-    PartitionChunk *chunk = new PartitionChunk();
-
-    fprintf(stderr, "creating partition chunk:\nangle: %f - %f\titerations: %d...\n", kMinAngle, kMaxAngle, kIterations);
-    chunk->create(kMinAngle, kMaxAngle, kIterations);
-    fprintf(stderr, "done, %lu rects\n", (unsigned long int)chunk->getRectsCount());
-    
-    addChunk(chunk);
-
-    return chunk;
-}
 
 void Partition::addChunk(PartitionChunk *chunk)
 {

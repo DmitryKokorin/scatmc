@@ -11,23 +11,45 @@
 
 
 
-LinearInterpolation*	Photon::s_length        = NULL;
-Partition*		        Photon::s_partition     = NULL;
-EscFunctionEE*	        Photon::s_escFunction	= NULL;
+LinearInterpolation*	Photon::s_oLength       = NULL;
+LinearInterpolation*	Photon::s_eLength       = NULL;
+
+Partition*		        Photon::s_oePartition   = NULL;
+Partition*		        Photon::s_eoPartition   = NULL;
+Partition*		        Photon::s_eePartition   = NULL;
+
+EscFunction*	        Photon::s_oEscFunction	= NULL;
+EscFunction*	        Photon::s_eEscFunction	= NULL;
+
+LinearInterpolation*    Photon::s_eChannelProb  = NULL;
+
 
 
 RngEngine	Photon::rng_engine	= RngEngine();
 
 
 
-void Photon::init(	LinearInterpolation* length_,
-					Partition* partition_,
-					EscFunctionEE* escFunction_,
+void Photon::init(	LinearInterpolation*    oLength_,
+                    LinearInterpolation*    eLength_,
+                    Partition*              oePartition_,
+                    Partition*              eoPartition_,
+                    Partition*              eePartition_,
+					EscFunction*            oEscFunction_,
+                    EscFunction*            eEscFunction_,
+                    LinearInterpolation*    eChannelProb_,
 					unsigned long seed_)
 {
-	s_length      = length_;
-	s_partition   = partition_;
-	s_escFunction = escFunction_;
+	s_oLength     = oLength_;
+	s_eLength     = eLength_;
+
+	s_oePartition = oePartition_;
+	s_eoPartition = eoPartition_;
+	s_eePartition = eePartition_;
+
+	s_oEscFunction = oEscFunction_;
+	s_eEscFunction = eEscFunction_;
+
+	s_eChannelProb = eChannelProb_;
 
 	Photon::rng_engine.seed(seed_);
 }
@@ -40,15 +62,22 @@ Photon::Photon(const Vector3& s, const int channel_) :
 	weight(1.),
 	fullIntegral(0.),
 	channel(channel_),
-	length(*s_length),
-	partition(*s_partition),
-	escFunction(*s_escFunction),
+	oLength(*s_oLength),
+	eLength(*s_eLength),
+	oePartition(*s_oePartition),
+	eoPartition(*s_eoPartition),
+	eePartition(*s_eePartition),
+	oEscFunction(*s_oEscFunction),
+	eEscFunction(*s_eEscFunction),
+	eChannelProb(*s_eChannelProb),
 	m_chunk(NULL),
 	m_knotValues(),
 	m_rectValues()
 {
-	m_knotValues.reserve(s_partition->getMaxKnotsCount());
-	m_rectValues.reserve(s_partition->getMaxRectsCount());
+	m_knotValues.reserve(std::max(s_oePartition->getMaxKnotsCount(),
+	                    std::max(s_eoPartition->getMaxKnotsCount(), s_eePartition->getMaxKnotsCount())));
+	m_rectValues.reserve(std::max(s_oePartition->getMaxRectsCount(),
+	                    std::max(s_eoPartition->getMaxRectsCount(), s_eePartition->getMaxRectsCount())));
 }
 
 
@@ -57,7 +86,7 @@ void Photon::move()
 	Float rnd;
     Float theta = symmetrizeTheta(Angle(s_i, Optics::director).theta);
 
-	Float meanFreePath = length(theta);
+	Float meanFreePath = (channel == Optics::OCHANNEL) ? oLength(theta) : eLength(theta);
 
     Float c1 = (s_i.z() >= 0) ? 1. : -expm1((pos.z()/s_i.z())/meanFreePath);
 
@@ -73,19 +102,16 @@ void Photon::move()
 
 void Photon::scatter()
 {
-    Vector3 nn;
-    Matrix3 mtx;
-    Angle   a_i;
-
-    createTransformToPartitionCoords(mtx, nn, a_i);
-    selectPartitionChunk(a_i.theta);
-    calcPartitionValues(nn);
-
-    weight *= (1. - escFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
+    //reduce weight
+    
+    if (Optics::OCHANNEL == channel)
+        weight *= (1. - oEscFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
+    else
+        weight *= (1. - eEscFunction(acos(s_i.z()), atan2(s_i.y(),s_i.x()), pos.z()));
 
 
-	//random value to choose rect
-
+    //prepare random numbers
+    Float randChannel;
 	Float randRect;
 	Float randX;
 	Float randY;
@@ -93,11 +119,50 @@ void Photon::scatter()
 
 	#pragma omp critical
 	{
-		randRect = random()*fullIntegral;
-		randX    = random();
-		randY    = random();
-		randPhi  = random();
+	    randChannel = random();
+		randRect    = random();
+		randX       = random();
+		randY       = random();
+		randPhi     = random();
 	}
+
+
+    Vector3 nn;
+    Matrix3 mtx;
+    Angle   a_i;
+
+    createTransformToPartitionCoords(mtx, nn, a_i);
+
+
+    //select channel
+    int newChannel;
+
+    if (Optics::OCHANNEL == channel) {
+
+        newChannel = Optics::ECHANNEL;
+        m_chunk = eoPartition.getChunk(a_i.theta);
+        calcPartitionValues<IndicatrixOE>(nn);
+    }
+    else {
+
+        newChannel = randChannel > eChannelProb(symmetrizeTheta(Angle(s_i, Optics::director).theta)) ? 
+            Optics::OCHANNEL : Optics::ECHANNEL;
+
+        if (Optics::OCHANNEL == newChannel) {
+
+            m_chunk = eoPartition.getChunk(a_i.theta);
+            calcPartitionValues<IndicatrixEO>(nn);
+        }
+        else {
+
+            m_chunk = eePartition.getChunk(a_i.theta);
+            calcPartitionValues<IndicatrixEE>(nn);
+        }
+    }
+
+
+    //renormalization  
+    randRect    *= fullIntegral;
 
 
 	//binary search of partition rect
@@ -136,6 +201,8 @@ void Photon::scatter()
 
 	s_i.normalize();  //to be sure
 
+	channel = newChannel;
+
 	scatterings++;
 }
 
@@ -167,14 +234,10 @@ void Photon::createTransformToPartitionCoords(Matrix3& mtx, Vector3& nn, Angle& 
 	nn = mtx*nn;                            //director in s_i -based coordinate system
 }
 
-void Photon::selectPartitionChunk(const Float theta)
-{
-    m_chunk = partition.getChunk(theta);
-}
-
+template <class T>
 void Photon::calcPartitionValues(const Vector3& nn)
 {
-    IndicatrixEE ind = IndicatrixEE(Vector3(0., 0., 1.), nn);
+    T ind(Vector3(0., 0., 1.), nn);
 	
 	{
 		KnotsVector& knots = m_chunk->m_knots;

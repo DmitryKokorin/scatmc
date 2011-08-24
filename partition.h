@@ -4,10 +4,12 @@
 
 #include <list>
 #include <string>
+#include <cstdio>
 
 #include "common.h"
+#include "partchunk.h"
 
-class PartitionChunk;
+
 typedef std::list<PartitionChunk*> ChunkList;
 
 
@@ -21,7 +23,9 @@ public:
     bool load(const std::string& name);
     bool save(const std::string& name);
 
+    template <class T>
     PartitionChunk* addChunk(const Float kMinAngle, const Float kMaxAngle, const int kIterations);
+
     void addChunk(PartitionChunk *chunk);
     PartitionChunk* getChunk(const Float kAngle);
 
@@ -38,6 +42,21 @@ private:
     Partition(const Partition&);
     Partition& operator=(const Partition&);
 };
+
+template <class T>
+PartitionChunk* Partition::addChunk(const Float kMinAngle, const Float kMaxAngle, const int kIterations)
+{
+    PartitionChunk *chunk = new PartitionChunk();
+
+    fprintf(stderr, "creating partition chunk:\nangle: %f - %f\titerations: %d...\n", kMinAngle, kMaxAngle, kIterations);
+    chunk->create<T>(kMinAngle, kMaxAngle, kIterations);
+    fprintf(stderr, "done, %lu rects\n", (unsigned long int)chunk->getRectsCount());
+    
+    addChunk(chunk);
+
+    return chunk;
+}
+
 
 
 #endif /* end of include guard: _PARTITION_H_ */

@@ -16,7 +16,6 @@
 class LinearInterpolation;
 class Partition;
 class PartitionChunk;
-//class EscFunctionEE;
 class Angle;
 
 
@@ -31,8 +30,16 @@ class Photon
 public:
 
 	Photon(const Vector3& s = Vector3(0., 0., 1.), const int channel_ = Optics::ECHANNEL);
-    static void init(LinearInterpolation* length, Partition* partition, EscFunctionEE* escFunction,
-            unsigned long seed = 1000);
+
+    static void init(   LinearInterpolation*    oLength,
+                        LinearInterpolation*    eLength,
+                        Partition*              oePartition,
+                        Partition*              eoPartition,
+                        Partition*              eePartition,
+                        EscFunction*            oEscFunction,
+                        EscFunction*            eEscFunction,
+                        LinearInterpolation*    eChannelProb,
+                        unsigned long seed = 1000);
 
 	void move();
 	void scatter();
@@ -45,11 +52,13 @@ public:
 	Float fullIntegral;
 	int   channel;
 
-protected:
+private:
 
     void createTransformToPartitionCoords(Matrix3& mtx, Vector3& nn, Angle& a_i);
-    void selectPartitionChunk(const Float theta);
+
+    template <class T>
     void calcPartitionValues(const Vector3& nn);
+
 	void choosePointInRect(Float& x, Float& y, const int rectIdx, const Float randX, const Float randY);
 
 
@@ -58,23 +67,38 @@ protected:
 	static inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
 
 
-	static LinearInterpolation* s_length;
-	static Partition*           s_partition;
-	static EscFunctionEE*         s_escFunction;
+	static LinearInterpolation* s_oLength;
+	static LinearInterpolation* s_eLength;
+
+	static Partition*           s_oePartition;
+	static Partition*           s_eoPartition;
+    static Partition*           s_eePartition;
+
+    static EscFunction*         s_oEscFunction;
+	static EscFunction*         s_eEscFunction;
+
+	static LinearInterpolation* s_eChannelProb;
 
     //these are to simulate static behavior for a reference (without ugly pointer syntax)
-	LinearInterpolation&    length;
-	Partition&              partition;
-	EscFunctionEE&          escFunction;
+	LinearInterpolation&    oLength;
+	LinearInterpolation&    eLength;
+
+	Partition&              oePartition;
+   	Partition&              eoPartition;
+	Partition&              eePartition;
+
+	EscFunction&            oEscFunction;
+	EscFunction&            eEscFunction;
+
+	LinearInterpolation&    eChannelProb;
 
 
-	PartitionChunk *m_chunk;
+	PartitionChunk *m_chunk; //current chunk
 
 	ValuesVector    m_knotValues;
 	ValuesVector    m_rectValues;
 
-private:
-
+    //disable copying
     Photon(const Photon&);
     Photon& operator=(const Photon&);
 };

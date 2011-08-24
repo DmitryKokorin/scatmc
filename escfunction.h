@@ -11,7 +11,6 @@
 #include "integrate.h"
 
 
-template <class T>
 class EscFunction
 {
 public:
@@ -19,7 +18,9 @@ public:
     EscFunction();
     ~EscFunction();
 
-    bool create(const LinearInterpolation& lengths,
+    template <class T>
+    bool create(const LinearInterpolation& FreePathO,
+                const LinearInterpolation& FreePAthE,
                 const ULong thetaSize,
                 const ULong phiSize,
                 const ULong zSize,
@@ -32,6 +33,8 @@ public:
 
 
 private:
+
+
 
     void recalcSteps();
 
@@ -51,55 +54,59 @@ private:
     EscFunction& operator=(const EscFunction&);
 };
 
+namespace escfunction {
 
-template <class T>
+template <class T1, class T2>
 class phiFunctor
 {
 public:
 
-    phiFunctor(T& indicatrix_, const Float sint_s_, const Float cost_s_, const Float z_, const LinearInterpolation& length_) :
-        indicatrix(indicatrix_),
+    phiFunctor(T1& indO_, T2& indE_, const Float sint_s_, const Float cost_s_, const Float z_,
+            const LinearInterpolation& FreePathO_,
+            const LinearInterpolation& FreePathE_) :
+        indO(indO_),
+        indE(indE_),
         sint_s(sint_s_),
         cost_s(cost_s_),
         z(z_),
-        length(length_)
+        FreePathO(FreePathO_),
+        FreePathE(FreePathE_)
     {}
 
     inline Float operator()(const Float phi)
     {  
-//        if (cost_s < -kMachineEpsilon) {
-
             Vector3 s_s = Vector3(sint_s*cos(phi), sint_s*sin(phi), cost_s);
 
             Float dist = z / cost_s;
+            Float theta = symmetrizeTheta(Angle(s_s, Optics::director).theta);
 
-            //fprintf(stderr, "dist = %.17e\n", dist);
-            //fprintf(stderr, "dist = %.17e\n", dist/length(symmetrizeTheta(Angle(s_s, Optics::director).theta)));
-
-
-            return indicatrix(s_s)*sint_s*exp(dist/length(symmetrizeTheta(Angle(s_s, Optics::director).theta)));
-//        }
+            return (indO(s_s)*exp(dist/FreePathO(theta)) +
+                    indE(s_s)*exp(dist/FreePathE(theta)) ) *  sint_s;
 
         return 0.;
     }
 
 protected:
 
-    T& indicatrix;
+    T1& indO;
+    T2& indE;
+
     Float sint_s;
     Float cost_s;
     Float z;
 
-    const LinearInterpolation& length;
+    const LinearInterpolation& FreePathO;
+    const LinearInterpolation& FreePathE;
 };
 
-template <class T>
+template <class T1, class T2>
 class phiFunctorNorm
 {
 public:
 
-    phiFunctorNorm(T& indicatrix_, const Float sint_s_, const Float cost_s_) :
-        indicatrix(indicatrix_),
+    phiFunctorNorm(T1& indO_, T2& indE_, const Float sint_s_, const Float cost_s_) :
+        indO(indO_),
+        indE(indE_),
         sint_s(sint_s_),
         cost_s(cost_s_)
     {}
@@ -109,26 +116,32 @@ public:
     {
         Vector3 s_s = Vector3(sint_s*cos(phi), sint_s*sin(phi), cost_s);
 
-        return indicatrix(s_s)*sint_s;
+        return (indO(s_s) + indE(s_s))*sint_s;
     }
 
 protected:
 
-    T& indicatrix;
+    T1& indO;
+    T2& indE;
+
     Float sint_s;
     Float cost_s;
 };
 
 
-template <class T>
+template <class T1, class T2>
 class thetaFunctor
 {
 public:
 
-    thetaFunctor(T& indicatrix_, const Float z_, const LinearInterpolation& length_) :
-        indicatrix(indicatrix_),
+    thetaFunctor(T1& indO_, T2& indE_, const Float z_,
+            const LinearInterpolation& FreePathO_, 
+            const LinearInterpolation& FreePathE_) :
+        indO(indO_),
+        indE(indE_),
         z(z_),
-        length(length_)
+        FreePathO(FreePathO_),
+        FreePathE(FreePathE_)
     {}
 
     inline Float operator()(const Float theta)
@@ -138,8 +151,7 @@ public:
      
         if (cost_s < -kMachineEpsilon) {
 
-            phiFunctor<T> functor = phiFunctor<T>(indicatrix, sint_s, cost_s, z, length);
-            //return  qsimp(functor, 0., 2*M_PI, 0.00001);
+            phiFunctor<T1, T2> functor(indO, indE, sint_s, cost_s, z, FreePathO, FreePathE);
             Adapt s(1.0e-6);
             return s.integrate(functor, 0., 2*M_PI);
         }
@@ -149,20 +161,24 @@ public:
 
 protected:
 
-    T& indicatrix;
+    T1& indO;
+    T2& indE;
+
     Float z;
 
-    const LinearInterpolation& length;
+    const LinearInterpolation& FreePathO;
+    const LinearInterpolation& FreePathE;
 };
 
 
-template <class T>
+template <class T1, class T2>
 class thetaFunctorNorm
 {
 public:
 
-    thetaFunctorNorm(T& indicatrix_) :
-        indicatrix(indicatrix_)
+    thetaFunctorNorm(T1& indO_, T2& indE_) :
+        indO(indO_),
+        indE(indE_)
     {}
 
     inline Float operator()(const Float theta)
@@ -170,49 +186,38 @@ public:
         Float cost_s = cos(theta);
         Float sint_s = sin(theta);
      
-        phiFunctorNorm<T>  functorNorm = phiFunctorNorm<T>(indicatrix, sint_s, cost_s);
-        //return  qsimp(functorNorm, 0., 2*M_PI, 0.00001);
+        phiFunctorNorm<T1, T2>  functorNorm(indO, indE, sint_s, cost_s);
+        
         Adapt s(1.0e-6);
         return s.integrate(functorNorm, 0., 2*M_PI);
     }
 
 protected:
 
-    T& indicatrix;
+    T1& indO;
+    T2& indE;
 };
 
 
+} // namespace escfunction
 
 
 
-
-template <class T>
-EscFunction<T>::EscFunction() :
-    m_maxZ(0.),
-    m_thetaSize(0),
-    m_phiSize(0),
-    m_zSize(0),
-    m_thetaStep(0.),
-    m_phiStep(0.),
-    m_zStep(0.),
-    m_array(NULL)
-{
-}
-
-template <class T>
-EscFunction<T>::~EscFunction()
-{
-//    free3dArray(m_array);
-}
 
 
 template <class T>
-bool EscFunction<T>::create(const LinearInterpolation& length,
+bool EscFunction::create(   const LinearInterpolation& oFreePath,
+                            const LinearInterpolation& eFreePath,
                             const ULong thetaSize,
                             const ULong phiSize,
                             const ULong zSize,
                             const Float maxZ)
 {
+
+    typedef Indicatrix<T, Optics::OBeam> IndicatrixO;
+    typedef Indicatrix<T, Optics::EBeam> IndicatrixE;
+
+
     m_array = allocate3dArray<Float>(zSize, phiSize, thetaSize);
 
     fprintf(stderr, "calculating escape function\n");
@@ -242,27 +247,23 @@ bool EscFunction<T>::create(const LinearInterpolation& length,
 
             
             Vector3 s_i = Vector3(sint_i*cos(p_i), sint_i*sin(p_i), cost_i);
-            T ind = T(s_i, Optics::director);
+            IndicatrixO indO(s_i, Optics::director);
+            IndicatrixE indE(s_i, Optics::director);
+
 
             for (ULong k = 0; k < zSize; ++k) {
 
                 Float z = k*m_zStep;
 
                 //double integration
-                thetaFunctor<T> functor = thetaFunctor<T>(ind, z, length);
-                //Float res = qsimp(functor, 0.5*M_PI + 10*kMachineEpsilon, M_PI, 0.00001);
-
-                thetaFunctorNorm<T> functorNorm = thetaFunctorNorm<T>(ind);
-                //Float norm = qsimp(functorNorm, 0., M_PI, 0.00001);
+                escfunction::thetaFunctor<IndicatrixO, IndicatrixE>     functor(indO, indE, z, oFreePath, eFreePath);
+                escfunction::thetaFunctorNorm<IndicatrixO, IndicatrixE> functorNorm(indO, indE);
                 
-
                 Adapt s(1.0e-4);
 
                 Float res = s.integrate(functor, 0.5*M_PI, M_PI);
                 Float norm = s.integrate(functorNorm, 0., M_PI);
 
-
-                //fprintf(stderr, "%.17e %.17e\n", res, norm);
 
 #ifndef EXPERIMENTAL
                 m_array[k][j][i] = res / norm;
@@ -282,83 +283,7 @@ bool EscFunction<T>::create(const LinearInterpolation& length,
     return true;
 }
 
-template <class T>
-Float EscFunction<T>::operator()(const Float theta, const Float phi, const Float z) const
-{
-    if (z >= m_maxZ)
-        return 0;
 
-    Float phi_ = phi >= 0 ? phi : 2.*M_PI + phi;
-    phi_ = phi_ < M_PI ? phi_ : phi_ - M_PI;	// n and -n are equivalent
-
-    int zIdx = (int)(z/m_zStep);
-    int phiIdx = (int)(phi_/m_phiStep);
-    int thetaIdx = (int)(theta/m_thetaStep);
-
-    if (zIdx == (int)(m_zSize - 1))
-        return m_array[zIdx][phiIdx][thetaIdx];
-
-    Float mu = z - zIdx*m_zStep;
-
-    return (1. - mu)*m_array[zIdx][phiIdx][thetaIdx] +
-                 mu* m_array[zIdx+1][phiIdx][thetaIdx];
-}
-
-template <class T>
-bool EscFunction<T>::load(const std::string& name)
-{
-    FILE *file = fopen(name.c_str(), "r");
-    if (!file)
-        return false;
-
-    int res = 0;
-
-    res = fscanf(file, "%lu %lu %lu %lf", &m_thetaSize, &m_phiSize, &m_zSize, &m_maxZ);
-    recalcSteps();
-
-    m_array = allocate3dArray<Float>(m_zSize, m_phiSize, m_thetaSize);
-
-    for (size_t i = 0; i < m_thetaSize; ++i)
-        for (size_t j = 0; j < m_phiSize; ++j)
-            for (size_t k = 0; k < m_zSize; ++k)
-                res = fscanf(file, "%lf", &(m_array[k][j][i]));
-
-    fclose(file);
-
-    return true;
-}
-
-template <class T>
-bool EscFunction<T>::save(const std::string& name)
-{
-    FILE *file = fopen(name.c_str(), "w");
-    if (!file)
-        return false;
-
-    fprintf(file, "%lu %lu %lu %.17e\n", m_thetaSize,
-             m_phiSize, m_zSize, m_maxZ);
-
-
-    for (size_t i = 0; i < m_thetaSize; ++i)
-        for (size_t j = 0; j < m_phiSize; ++j)
-            for (size_t k = 0; k < m_zSize; ++k)
-                fprintf(file, "%.17e\n", m_array[k][j][i]);
-
-
-    fclose(file);
-
-    return true;
-}
-
-template <class T>
-void EscFunction<T>::recalcSteps()
-{
-    m_thetaStep = M_PI / m_thetaSize;
-    m_phiStep = M_PI / m_phiSize;
-    m_zStep = m_maxZ / m_zSize;
-}
-
-typedef EscFunction<Indicatrix<Optics::EBeam, Optics::EBeam> > EscFunctionEE;
 
 
 #endif /* end of include guard: _ESCFUNCTION_H_ */
