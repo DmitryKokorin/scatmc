@@ -38,8 +38,12 @@ PartitionChunk::PartitionChunk() :
 
 PartitionChunk::~PartitionChunk()
 {
-	delete m_root;
+    cleanUp();
+}
 
+void PartitionChunk::cleanUp()
+{
+    delete m_root;
 	free2dArray(m_cellIntegrals);
 }
 

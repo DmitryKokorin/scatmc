@@ -19,7 +19,10 @@ Float LinearInterpolation::operator()(const Float& x) const
 
 	//locate index
 	Float mu = (x - m_min) / m_resolution;
-	int  idx = (int)(mu);
+	size_t  idx = (size_t)(mu);
+
+	if (idx + 1 == m_data.size())
+	    return m_data[idx];
 
 	mu  = mu - idx;
 

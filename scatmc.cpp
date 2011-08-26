@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <memory.h>
 #include <string.h>
+#include <sstream>
 
 #include "mathcompat.h"
 #include "common.h"
@@ -8,6 +9,7 @@
 #include "channel.h"
 #include "partition.h"
 #include "escfunction.h"
+#include "idxnorm.h"
 #include "photon.h"
 #include "indicatrix.h"
 #include "optics.h"
@@ -52,6 +54,8 @@ ScatMCApp::ScatMCApp() :
 	m_eePartitionFileName(),
 	m_oEscFunctionFileName(),
 	m_eEscFunctionFileName(),
+	m_oNormFileName(),
+	m_eNormFileName(),
 	m_loadOFreePath(false),
 	m_saveOFreePath(false),
 	m_loadEFreePath(false),
@@ -68,25 +72,26 @@ ScatMCApp::ScatMCApp() :
 	m_saveOEscFunction(false),
 	m_loadEEscFunction(false),
 	m_saveEEscFunction(false),
+	m_loadONorm(false),
+	m_saveONorm(false),
+	m_loadENorm(false),
+	m_saveENorm(false),
 	m_eLength(),
 	m_oLength(),
 	m_eChannelProb(),
+	m_oNorm(),
+	m_eNorm(),
 	m_seed(1000),
 	m_maxPhotons(1000),
 	m_maxScatterings(100000),
 	m_minPhotonWeight(1e-8),
     m_photonCnt(0),
-	m_chunkParams()
+	m_chunkParams(),
+	m_ladderFiles(),
+	m_cyclicFiles(),
+	m_dataLadder(),
+	m_dataCyclic()
 {
-	memset(&det1,     0, sizeof(det1));
-	memset(&det2,     0, sizeof(det2));
-	memset(&det5,     0, sizeof(det5));
-	memset(&det100,   0, sizeof(det100));
-	memset(&det5000,   0, sizeof(det100));
-    memset(&det100000,   0, sizeof(det100));
-
-	memset(&detall,   0, sizeof(detall));
-	memset(&lastdet,  0, sizeof(lastdet));
 }
 
 bool ScatMCApp::getOpts(int argc, char ** argv)
@@ -108,6 +113,9 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 				return false;
 
 			m_workDir = argv[i];
+
+			if (!m_workDir.empty())
+			    m_workDir = m_workDir + '/';
 		}
 		else if(!strcmp(argv[i], "--loadofreepath")) {
 
@@ -186,7 +194,7 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_loadOEscFunction     = true;
 			m_oEscFunctionFileName = argv[i];
 		}
-		else if (!strcmp(argv[i], "--loadescfunction")) {
+		else if (!strcmp(argv[i], "--loadeescfunction")) {
 
 			if (m_saveEEscFunction)
 				return false;
@@ -196,6 +204,28 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 
 			m_loadEEscFunction     = true;
 			m_eEscFunctionFileName = argv[i];
+		}
+		else if(!strcmp(argv[i], "--loadonorm")) {
+
+			if (m_saveONorm)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadONorm     = true;
+			m_oNormFileName = argv[i];
+		}
+		else if(!strcmp(argv[i], "--loadenorm")) {
+
+			if (m_saveENorm)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_loadENorm     = true;
+			m_eNormFileName = argv[i];
 		}
 		else if (!strcmp(argv[i], "--saveofreepath")) {
 
@@ -288,6 +318,29 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 			m_saveEEscFunction     = true;
 			m_eEscFunctionFileName = argv[i];
 		}
+		else if (!strcmp(argv[i], "--saveonorm")) {
+
+			if (m_loadONorm)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveONorm     = true;
+			m_oNormFileName = argv[i];
+
+		}
+		else if (!strcmp(argv[i], "--saveenorm")) {
+
+			if (m_loadENorm)
+				return false;
+
+			if (++i == argc)
+				return false;
+
+			m_saveENorm     = true;
+			m_eNormFileName = argv[i];
+		}
 		else if (!strcmp(argv[i], "--photons")) {
 
 			if (++i == argc)
@@ -310,9 +363,37 @@ bool ScatMCApp::getOpts(int argc, char ** argv)
 }
 
 
+
+
 int ScatMCApp::run()
 {
     fprintf(stderr, "# seed = %d\n", getSeed());
+
+
+    //allocate arrays of full data
+    m_dataCyclic = allocate2dArray<Float>(kPhiSize, kThetaSize);
+    m_dataLadder = allocate2dArray<Float>(kPhiSize, kThetaSize);
+
+    //allocate arrays for individual scattering orders data
+    int orders[] = {1, 2, 3, 4, 5, 10, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000};
+    int ordersLength = sizeof(orders)/sizeof(orders[0]);
+
+    for (int i = 0; i < ordersLength; ++i) {
+
+        std::string       s1;
+        std::stringstream ss1(s1);
+
+        ss1 << m_workDir << "ladder" << orders[i] << ".txt";
+        m_ladderFiles.push_back(ScatteringOrder(orders[i], ss1.str(), allocate2dArray<Float>(kPhiSize, kThetaSize))); 
+
+        std::string       s2;
+        std::stringstream ss2(s2);
+
+
+        ss2 << m_workDir << "cyclic" << orders[i] << ".txt";
+        m_cyclicFiles.push_back(ScatteringOrder(orders[i], ss2.str(), allocate2dArray<Float>(kPhiSize, kThetaSize))); 
+    }
+
 
 	int res = 0;
 
@@ -333,14 +414,20 @@ int ScatMCApp::run()
 	if (0 != res)
 		return res;
 
+
+    res = prepareONorm(m_oNorm);
+
+    if (0 != res)
+        return res;
+
+    res = prepareENorm(m_eNorm);
+
+    if (0 != res)
+        return res;
 	
 
     //partition
-#ifdef EXPERIMENTAL
-    int numChunks = 1;
-#else
     int numChunks = 100;
-#endif
     Float chunkStep = 0.5*M_PI / numChunks;
 
     for (int i = 1; i <= numChunks; ++i)
@@ -394,7 +481,11 @@ int ScatMCApp::run()
 
 			ph.move();
 
-			processScattering(ph);
+            if (Optics::OCHANNEL == ph.channel)
+    			processScattering<Optics::OBeam>(ph);
+            else
+               	processScattering<Optics::EBeam>(ph);
+
 
 			ph.scatter();
 
@@ -417,12 +508,21 @@ int ScatMCApp::run()
 }
 
 
+
+template <class T>
 void ScatMCApp::processScattering(const Photon& ph)
 {
-	if (0 == ph.scatterings)
-		return;
+    Indicatrix<T, Optics::OBeam> indO(ph.s_i, Optics::director);
+	Indicatrix<T, Optics::EBeam> indE(ph.s_i, Optics::director);
+	
+	Float norm;
+	Float otheta = symmetrizeTheta(Angle(ph.s_i, Optics::director).theta);
 
-	IndicatrixEE ind(ph.s_i, Optics::director);
+	if (Optics::OCHANNEL == ph.channel)
+	    norm = m_oNorm(otheta);
+    else
+        norm = m_eNorm(otheta);
+
 
     #pragma omp critical
 	{
@@ -446,46 +546,49 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float x      = ph.pos.x() + dist*s_s.x();
 			Float y      = ph.pos.y() + dist*s_s.y();
 
-			Float lengthFactor = exp(-dist/m_eLength(symmetrizeTheta(a_s.theta)));
+			Float symmetrizedTheta = symmetrizeTheta(a_s.theta);
 
-			Vector3 R = Vector3(x, y, 0);
-#ifndef EXPERIMENTAL
-			Vector3 q = Optics::EBeam::k(s_s, a_s)*Optics::k0;
-#else
-            Vector3 q = Optics::k0*s_s;
-#endif
+            Float oLengthFactor = exp(-dist/m_oLength(symmetrizedTheta));
+			Float eLengthFactor = exp(-dist/m_eLength(symmetrizedTheta));
 
-			Float probFactor = ind(s_s)/ph.fullIntegral;
+			Vector3 R  = Vector3(x, y, 0);
+			Vector3 qe = Optics::EBeam::k(s_s, a_s)*Optics::k0;
+			Vector3 qo = Optics::OBeam::k(s_s, a_s)*Optics::k0;
 
-			Float res = ph.weight*lengthFactor*probFactor*cos(q*R);
+			Float oProbFactor = indO(s_s)/norm;
+			Float eProbFactor = indE(s_s)/norm;
 
-			if (!isnan(res)) {
-				if (0 == ph.scatterings)
-					det1[j][i] += res;
-				else {
+			Float ladderRes = ph.weight*(oLengthFactor*oProbFactor + eLengthFactor*eProbFactor);
 
-					if (1 == ph.scatterings)
-						det2[j][i] += res;
+			Float cyclicRes = ph.weight*(oLengthFactor*oProbFactor*cos(qo*R)
+			                           + eLengthFactor*eProbFactor*cos(qe*R));
 
-					if (4 == ph.scatterings)
-						det5[j][i] += res;
+            ScatteringOrderFiles::iterator iter = m_ladderFiles.begin();
+            ScatteringOrderFiles::iterator end  = m_ladderFiles.end();
 
-					if (100 == ph.scatterings)
-						det100[j][i] += res;
+            while (iter != end) {
 
-					if (5000 == ph.scatterings)
-					    det5000[j][i] += res;
+                if (ph.scatterings + 1 == iter->order)
+                    iter->data[j][i] += ladderRes;
+             
+                ++iter;
+            }
 
-					if (100000 == ph.scatterings)
-					    det100000[j][i] += res;
+            iter = m_cyclicFiles.begin();
+            end  = m_cyclicFiles.end();
 
-					detall[j][i] += res;
-				}
-			}
-			else {
+            while (iter != end) {
 
-				fprintf(stderr, "%f\n", ph.fullIntegral);
-			}
+                if (ph.scatterings + 1 == iter->order)
+                    iter->data[j][i] += cyclicRes;
+
+                ++iter;
+            }
+
+            m_dataLadder[j][i] += ladderRes;
+
+            if (0 != ph.scatterings)
+                m_dataCyclic[j][i] += cyclicRes;
 		}
 	}
 }
@@ -493,39 +596,26 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 void ScatMCApp::output()
 {
-	FILE *det1file     = 0,
-		 *det2file     = 0,
-		 *det5file     = 0,
-		 *det100file   = 0,
-		 *det5000file  = 0,
-		 *det100000file= 0,
-		 *detallfile   = 0;
-
-	// I'll fix this one day, I promise
-
-    std::string fileName;
-
-    fileName = m_workDir + "/peak1.txt";
-	det1file     = fopen(fileName.c_str(), "w");
-
-    fileName = m_workDir + "/peak2.txt";
-   	det2file     = fopen(fileName.c_str(), "w");
-
-    fileName = m_workDir + "/peak5.txt";
-   	det5file     = fopen(fileName.c_str(), "w");
-
-    fileName = m_workDir + "/peak100.txt";
-   	det100file     = fopen(fileName.c_str(), "w");
-
-    fileName = m_workDir + "/peak5000.txt";
-   	det5000file     = fopen(fileName.c_str(), "w");
-
-    fileName = m_workDir + "/peak100000.txt";
-   	det100000file     = fopen(fileName.c_str(), "w");
+    typedef ScatteringOrderFiles::iterator Iter;
 
 
-    fileName = m_workDir + "/peakall.txt";
-	detallfile   = fopen(fileName.c_str(), "w");
+    for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
+
+        iter->file = fopen(iter->fileName.c_str(), "w");
+    }
+
+    for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+
+        iter->file = fopen(iter->fileName.c_str(), "w");
+    }
+
+
+    std::string fileName = m_workDir + "ladder.txt";
+	FILE* ladderFile     = fopen(fileName.c_str(), "w");
+
+    fileName = m_workDir + "cyclic.txt";
+	FILE* cyclicFile     = fopen(fileName.c_str(), "w");
+
 
 
 	Float thetaStep = kThetaMax / kThetaSize;
@@ -537,22 +627,34 @@ void ScatMCApp::output()
 			Float phi   = j*phiStep;
 			Float theta = i*thetaStep;
 
-			fprintf(det1file,     "%e\t%e\t%.17e\n", theta, phi, det1[j][i]);
-			fprintf(det2file,     "%e\t%e\t%.17e\n", theta, phi, det2[j][i]);
-			fprintf(det5file,     "%e\t%e\t%.17e\n", theta, phi, det5[j][i]);
-			fprintf(det100file,   "%e\t%e\t%.17e\n", theta, phi, det100[j][i]);
-			fprintf(det5000file,  "%e\t%e\t%.17e\n", theta, phi, det5000[j][i]);
-			fprintf(det100000file,  "%e\t%e\t%.17e\n", theta, phi, det100000[j][i]);
-			fprintf(detallfile,   "%e\t%e\t%.17e\n", theta, phi, detall[j][i]);
+            for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
+
+                fprintf(iter->file,     "%e\t%e\t%.17e\n", theta, phi, iter->data[j][i]);
+            }
+
+            for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+
+                fprintf(iter->file,     "%e\t%e\t%.17e\n", theta, phi, iter->data[j][i]);
+            }
+
+			fprintf(ladderFile,   "%e\t%e\t%.17e\n", theta, phi, m_dataLadder[j][i]);
+			fprintf(cyclicFile,   "%e\t%e\t%.17e\n", theta, phi, m_dataCyclic[j][i]);
 		}
 
-	fclose(det1file);
-	fclose(det2file);
-	fclose(det5file);
-	fclose(det100file);
-	fclose(det5000file);
-	fclose(det100000file);
-	fclose(detallfile);
+
+    for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
+
+        fclose(iter->file);
+    }
+
+    for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+
+        fclose(iter->file);
+    }
+
+
+    fclose(ladderFile);
+    fclose(cyclicFile);
 }
 
 
@@ -570,12 +672,18 @@ void ScatMCApp::printHelp()
 	fprintf(stderr, "\n--loadeepartition [filename]\t\tload e-e partition from file");
 	fprintf(stderr, "\n--loadoescfunction [filename]\t\tload o-escape function from file");
 	fprintf(stderr, "\n--loadeescfunction [filename]\t\tload e-escape function from file");
+	fprintf(stderr, "\n--loadonorm [filename]\t\tload o-beam indicatrix norm from file");
+	fprintf(stderr, "\n--loadenorm [filename]\t\tload e-beam indicatrix from file");
 	fprintf(stderr, "\n--saveofreepath [filename]\t\tsave o-beam free path to file");
 	fprintf(stderr, "\n--saveefreepath [filename]\t\tsave e-beam free path to file");
-	fprintf(stderr, "\n--saveochannelprob [filename]\t\tsave o-e probability to file");
 	fprintf(stderr, "\n--saveechannelprob [filename]\t\tsave e-e probability to file");
-	fprintf(stderr, "\n--savepartition [filename]\t\tsave partition to file");
-	fprintf(stderr, "\n--saveescfunction [filename]\t\tsave escape function to file");
+	fprintf(stderr, "\n--saveoepartition [filename]\t\tsave o-e partition to file");
+	fprintf(stderr, "\n--saveeopartition [filename]\t\tsave e-o partition to file");
+    fprintf(stderr, "\n--saveeepartition [filename]\t\tsave e-e partition to file");
+	fprintf(stderr, "\n--saveoescfunction [filename]\t\tsave o-escape function to file");
+	fprintf(stderr, "\n--saveeescfunction [filename]\t\tsave e-escape function to file");
+	fprintf(stderr, "\n--saveonorm [filename]\t\tsave o-beam indicatrix norm to file");
+	fprintf(stderr, "\n--saveenorm [filename]\t\tsave e-beam indicatrix norm to file");
 	fprintf(stderr, "\n--photons [photons]\t\t\tnumber of photons to scatter");
 	fprintf(stderr, "\n--scatterings [scatterings]\t\tmax scatterings for each photon");
 	fprintf(stderr, "\n");
@@ -939,3 +1047,85 @@ int ScatMCApp::prepareOEscFunction(EscFunction& esc)
 
 	return 0;
 }
+
+int ScatMCApp::prepareONorm(LinearInterpolation& l)
+{
+	if (isLoadONorm()) {
+
+		fprintf(stderr, "loading o-beam norm file...");
+
+		if (!l.load(getONormFileName())) {
+
+			fprintf(stderr, "can't load o-beam norm data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "calculating o-beam norm data...\n");
+		createIndicatrixNorm<Optics::OBeam>(l);
+	}
+
+	if (isSaveONorm()) {
+
+		fprintf(stderr, "saving o-beam norm data to file...");
+
+		if (!l.save(getONormFileName())) {
+
+			fprintf(stderr, "can't save o-beam norm data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+
+
+int ScatMCApp::prepareENorm(LinearInterpolation& l)
+{
+	if (isLoadENorm()) {
+
+		fprintf(stderr, "loading e-beam norm file...");
+
+		if (!l.load(getENormFileName())) {
+
+			fprintf(stderr, "can't load e-beam norm data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+	else {
+
+		fprintf(stderr, "calculating e-beam norm data...\n");
+		createIndicatrixNorm<Optics::EBeam>(l);
+	}
+
+	if (isSaveENorm()) {
+
+		fprintf(stderr, "saving e-beam norm data to file...");
+
+		if (!l.save(getENormFileName())) {
+
+			fprintf(stderr, "can't save e-beam norm data\n");
+			return -1;
+		}
+		else {
+
+			fprintf(stderr, "\tdone\n");
+		}
+	}
+
+	return 0;
+}
+

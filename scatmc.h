@@ -7,9 +7,45 @@
 
 
 //right region border and number of iterations for some partition chunk
-typedef std::pair<Float, size_t> ChunkParam;
-typedef std::list<ChunkParam> ChunkParamsList;
+typedef std::pair<Float, size_t>    ChunkParam;
+typedef std::list<ChunkParam>       ChunkParamsList;
 
+struct ScatteringOrder
+{
+    ScatteringOrder(const int order_, const std::string fileName_, Float** data_) :
+        order(order_),
+        fileName(fileName_),
+        data(data_),
+        file(NULL)
+    {}
+
+
+    ScatteringOrder(const ScatteringOrder& other) :
+        order(other.order),
+        fileName(other.fileName),
+        data(other.data),
+        file(NULL)
+    {}
+
+
+
+    ScatteringOrder& operator=(const ScatteringOrder& other)
+    {
+        order    = other.order;
+        fileName = other.fileName;
+        data     = other.data;
+
+        return *this;
+    }
+
+    int         order;
+    std::string fileName;
+    Float**     data;
+    FILE*       file;
+};
+
+
+typedef std::list<ScatteringOrder>  ScatteringOrderFiles;
 
 
 class ScatMCApp
@@ -58,6 +94,12 @@ private:
 	bool isLoadOEscFunction() const {return m_loadOEscFunction;}
 	bool isSaveOEscFunction() const {return m_saveOEscFunction;}
 
+	bool isLoadONorm() const {return m_loadONorm;}
+	bool isSaveONorm() const {return m_saveONorm;}
+	bool isLoadENorm() const {return m_loadENorm;}
+	bool isSaveENorm() const {return m_saveENorm;}
+
+
 	const std::string& getOFreePathFileName() const {return m_oFreePathFileName;}
 	const std::string& getEFreePathFileName() const {return m_eFreePathFileName;}
 
@@ -69,6 +111,9 @@ private:
 
 	const std::string& getOEscFunctionFileName() const {return m_oEscFunctionFileName;}
 	const std::string& getEEscFunctionFileName() const {return m_eEscFunctionFileName;}
+
+    const std::string& getONormFileName() const {return m_oNormFileName;}
+    const std::string& getENormFileName() const {return m_eNormFileName;}
 
 	const std::string& getWorkDir() const {return m_workDir;}
 
@@ -85,7 +130,12 @@ private:
     int  prepareOEscFunction(EscFunction& escFunction);
     int  prepareEEscFunction(EscFunction& escFunction);
 
+    int  prepareONorm(LinearInterpolation& norm);
+    int  prepareENorm(LinearInterpolation& norm);
+
+    template <class T>
 	void processScattering(const Photon& ph);
+
 	void output();
 
     std::string m_workDir;
@@ -102,6 +152,9 @@ private:
 
     std::string m_oEscFunctionFileName;
     std::string m_eEscFunctionFileName;
+
+    std::string m_oNormFileName;
+    std::string m_eNormFileName;
 
 
    	bool m_loadOFreePath;
@@ -124,11 +177,19 @@ private:
 	bool m_loadEEscFunction;
 	bool m_saveEEscFunction;
 
+	bool m_loadONorm;
+	bool m_saveONorm;
+	bool m_loadENorm;
+	bool m_saveENorm;
+
 
 	LinearInterpolation m_eLength;
 	LinearInterpolation m_oLength;
 
 	LinearInterpolation m_eChannelProb;
+
+	LinearInterpolation m_oNorm;
+	LinearInterpolation m_eNorm;
 
 	int m_seed;
 	int m_maxPhotons;
@@ -139,18 +200,16 @@ private:
 
     ChunkParamsList    m_chunkParams;
 	
+    ScatteringOrderFiles m_ladderFiles;
+    ScatteringOrderFiles m_cyclicFiles;
 
-	//TODO: list of arrays for detected intensity
+    Float **m_dataLadder;
+    Float **m_dataCyclic;
 
-	Float det1[kPhiSize][kThetaSize];
-	Float det2[kPhiSize][kThetaSize];
-	Float det5[kPhiSize][kThetaSize];
-	Float det100[kPhiSize][kThetaSize];
-	Float det5000[kPhiSize][kThetaSize];
-    Float det100000[kPhiSize][kThetaSize];
-	Float detall[kPhiSize][kThetaSize];
+private:
 
-	Float lastdet[kPhiSize][kThetaSize];
+    ScatMCApp& operator=(const ScatMCApp& other);
+    ScatMCApp(const ScatMCApp& other);
 };
 
 #endif /* _INDICATRIX_APP_H_ */

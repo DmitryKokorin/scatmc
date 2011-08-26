@@ -59,10 +59,12 @@ private:
 	Float approxIntegral(const GreedRect& rect);
 	Float rectError(const GreedRect& rect);
 
-    template <class T>
+	template <class T>
 	void createPartitionTree();
 
 	void createRectsList();
+
+	void cleanUp();
 	
 	Float m_minAngle;
 	Float m_maxAngle;
@@ -107,6 +109,8 @@ bool PartitionChunk::create(const Float minAngle, const Float maxAngle, const in
 
 	createPartitionTree<T>();
 	createRectsList();
+
+	cleanUp();
 
 	return true;
 }

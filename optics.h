@@ -128,12 +128,10 @@ public:
     }
 
     //polarization vector
-//    static inline Vector3 e(const Vector3& k, const Vector3& nn, const Angle& a)
     static inline Vector3 e(const Vector3& s, const Vector3& director_, const Angle& a)
     {
 	    if (fabs(a.sintheta) > kMachineEpsilon) {
 
-		    //Vector3 s = Vector3(k).normalize();
 		    return (s*eps_par*a.costheta - director_*(eps_par*a.cos2theta + eps_perp*a.sin2theta)).normalize();
 	    }
     	else { //along the optical axis, so we use the expression for the ordinary beam polarization
