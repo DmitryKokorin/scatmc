@@ -112,8 +112,6 @@ void createIndicatrixNorm(LinearInterpolation& li, const int kPoints = 1000)
         Float integral = s.integrate(functor, 0., M_PI);
 
 		li[i] = integral;
-
-		fprintf(stderr, "%d\n", i);
 	}
 
 	li[0] = li[1];

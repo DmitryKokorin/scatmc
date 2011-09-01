@@ -8,8 +8,8 @@ OBJECTS=$(SOURCES:%.cpp=%.o)
 #CPPFLAGS	+=-D__DEBUG__ -g
 
 #profiling
-#CPPFLAGS	+= -pg
-#LDFLAGS	+= -pg
+CPPFLAGS += -g
+LDFLAGS	 += -g
 
 #arch
 CPPFLAGS	+=-march=native -O3 -ffast-math -pipe
