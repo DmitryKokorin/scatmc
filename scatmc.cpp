@@ -465,42 +465,51 @@ int ScatMCApp::run()
         return res;
 
 	fprintf(stderr, "scattering...\n");
-	Photon::init(&m_oLength, &m_eLength, &pOE, &pEO, &pEE, &oEscFunction, &eEscFunction, &m_eChannelProb, getSeed());
+	Photon::init(&m_oLength, &m_eLength, &pOE, &pEO, &pEE, &oEscFunction, &eEscFunction, &m_eChannelProb);
 
 
     //main loop
 
-	#pragma omp parallel for
-	for (int i = 0; i < m_maxPhotons; ++i) {
+    RngEngine rng_engine;
+    int saveRate = omp_get_max_threads();
 
-		Photon ph;
+	#pragma omp parallel private (rng_engine)
+    {
 
-		while (ph.pos.z() >= 0.
-		        && ph.scatterings < m_maxScatterings
-		        && ph.weight > m_minPhotonWeight) {
+        rng_engine.seed(m_seed + kSeedIncrement*omp_get_thread_num());
+        
+        #pragma omp for schedule (dynamic)
+    	for (int i = 0; i < m_maxPhotons; ++i) {
 
-			ph.move();
+	    	Photon ph(rng_engine);
 
-            if (Optics::OCHANNEL == ph.channel)
-    			processScattering<Optics::OBeam>(ph);
-            else
-               	processScattering<Optics::EBeam>(ph);
+		    while (ph.pos.z() >= 0.
+		            && ph.scatterings < m_maxScatterings
+		            && ph.weight > m_minPhotonWeight) {
+
+    			ph.move();
+
+                if (Optics::OCHANNEL == ph.channel)
+    	    		processScattering<Optics::OBeam>(ph);
+                else
+               	    processScattering<Optics::EBeam>(ph);
+
+    
+	    		ph.scatter();
+
+		    }
 
 
-			ph.scatter();
+		    #pragma omp critical
+		    {
+			    ++m_photonCnt;
+			    fprintf(stderr, "Photon: %d\tScatterings: %d\n", m_photonCnt, ph.scatterings);
 
-		}
-
-
-		#pragma omp critical
-		{
-			++m_photonCnt;
-			fprintf(stderr, "Photon: %d\tScatterings: %d\n", m_photonCnt, ph.scatterings);
-
-			if (0 == m_photonCnt % kSaveRate)
-                output();
-		}
-	}
+			    if (0 == m_photonCnt % saveRate)
+                    output();
+		    }
+	    }
+    }
 
 	output();
 
@@ -563,26 +572,16 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float cyclicRes = ph.weight*(oLengthFactor*oProbFactor*cos(qo*R)
 			                           + eLengthFactor*eProbFactor*cos(qe*R));
 
-            ScatteringOrderFiles::iterator iter = m_ladderFiles.begin();
-            ScatteringOrderFiles::iterator end  = m_ladderFiles.end();
-
-            while (iter != end) {
+            for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
 
                 if (ph.scatterings + 1 == iter->order)
                     iter->data[j][i] += ladderRes;
-             
-                ++iter;
             }
 
-            iter = m_cyclicFiles.begin();
-            end  = m_cyclicFiles.end();
-
-            while (iter != end) {
-
-                if (ph.scatterings + 1 == iter->order)
+            for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+                
+                 if (ph.scatterings + 1 == iter->order)
                     iter->data[j][i] += cyclicRes;
-
-                ++iter;
             }
 
             m_dataLadder[j][i] += ladderRes;
@@ -596,9 +595,6 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 void ScatMCApp::output()
 {
-    typedef ScatteringOrderFiles::iterator Iter;
-
-
     for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
 
         iter->file = fopen(iter->fileName.c_str(), "w");

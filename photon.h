@@ -29,7 +29,7 @@ class Photon
 {
 public:
 
-	Photon(const Vector3& s = Vector3(0., 0., 1.), const int channel_ = Optics::ECHANNEL);
+	Photon(RngEngine& rng_engine, const Vector3& s = Vector3(0., 0., 1.), const int channel_ = Optics::ECHANNEL);
 
     static void init(   LinearInterpolation*    oLength,
                         LinearInterpolation*    eLength,
@@ -38,8 +38,7 @@ public:
                         Partition*              eePartition,
                         EscFunction*            oEscFunction,
                         EscFunction*            eEscFunction,
-                        LinearInterpolation*    eChannelProb,
-                        unsigned long seed = 1000);
+                        LinearInterpolation*    eChannelProb);
 
 	void move();
 	void scatter();
@@ -62,9 +61,9 @@ private:
 	void choosePointInRect(Float& x, Float& y, const int rectIdx, const Float randX, const Float randY);
 
 
-	static RngEngine	rng_engine;
+	RngEngine&	rng_engine;
 
-	static inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
+	inline Float random() { return (Float)Photon::rng_engine() / UINT_MAX; }
 
 
 	static LinearInterpolation* s_oLength;

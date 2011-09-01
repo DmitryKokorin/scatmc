@@ -33,8 +33,11 @@ bool Partition::load(const std::string& name)
     unsigned long int chunksNum, i;
     res = fscanf(file, "%lu", &chunksNum);
 
-    if (0 == res)
+    if (0 == res) {
+
+        fclose(file);
         return false;
+    }
 
     for (i = 0; i < chunksNum; ++i) {
 

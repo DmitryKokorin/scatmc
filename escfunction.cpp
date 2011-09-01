@@ -47,14 +47,28 @@ bool EscFunction::load(const std::string& name)
     int res = 0;
 
     res = fscanf(file, "%lu %lu %lu %lf", &m_thetaSize, &m_phiSize, &m_zSize, &m_maxZ);
+    if (EOF == res) {
+
+        fclose(file);
+        return false;
+    }
+
     recalcSteps();
 
     m_array = allocate3dArray<Float>(m_zSize, m_phiSize, m_thetaSize);
 
     for (size_t i = 0; i < m_thetaSize; ++i)
         for (size_t j = 0; j < m_phiSize; ++j)
-            for (size_t k = 0; k < m_zSize; ++k)
+            for (size_t k = 0; k < m_zSize; ++k) {
+
                 res = fscanf(file, "%lf", &(m_array[k][j][i]));
+
+                if (EOF == res) {
+
+                    fclose(file);
+                    return false;
+                }
+            }
 
     fclose(file);
 

@@ -43,7 +43,7 @@ public:
 	Node(const GreedRect& rect_);
 	~Node();
 
-	bool isLeaf();
+	bool isLeaf() const;
 
 	bool splitX();
     bool splitY(); 

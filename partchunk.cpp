@@ -44,7 +44,9 @@ PartitionChunk::~PartitionChunk()
 void PartitionChunk::cleanUp()
 {
     delete m_root;
-	free2dArray(m_cellIntegrals);
+
+    if (m_cellIntegrals)
+    	free2dArray(m_cellIntegrals);
 }
 
 void PartitionChunk::setData(Float** const data, const Float& cellSquare)

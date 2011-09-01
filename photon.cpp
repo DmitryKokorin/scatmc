@@ -25,10 +25,6 @@ LinearInterpolation*    Photon::s_eChannelProb  = NULL;
 
 
 
-RngEngine	Photon::rng_engine	= RngEngine();
-
-
-
 void Photon::init(	LinearInterpolation*    oLength_,
                     LinearInterpolation*    eLength_,
                     Partition*              oePartition_,
@@ -36,8 +32,7 @@ void Photon::init(	LinearInterpolation*    oLength_,
                     Partition*              eePartition_,
 					EscFunction*            oEscFunction_,
                     EscFunction*            eEscFunction_,
-                    LinearInterpolation*    eChannelProb_,
-					unsigned long seed_)
+                    LinearInterpolation*    eChannelProb_)
 {
 	s_oLength     = oLength_;
 	s_eLength     = eLength_;
@@ -50,18 +45,17 @@ void Photon::init(	LinearInterpolation*    oLength_,
 	s_eEscFunction = eEscFunction_;
 
 	s_eChannelProb = eChannelProb_;
-
-	Photon::rng_engine.seed(seed_);
 }
 
 
-Photon::Photon(const Vector3& s, const int channel_) :
+Photon::Photon(RngEngine& rng_engine_, const Vector3& s, const int channel_) :
 	pos(0.,0.,0.),
 	s_i(s),
 	scatterings(0),
 	weight(1.),
 	fullIntegral(0.),
 	channel(channel_),
+	rng_engine(rng_engine_),
 	oLength(*s_oLength),
 	eLength(*s_eLength),
 	oePartition(*s_oePartition),
@@ -90,10 +84,7 @@ void Photon::move()
 
     Float c1 = (s_i.z() >= 0) ? 1. : -expm1((pos.z()/s_i.z())/meanFreePath);
 
-	#pragma omp critical
-	{
-		rnd = random();
-	}
+	rnd = random();
 
 	Float d = -log1p(-c1*rnd)*meanFreePath;
 
@@ -111,21 +102,11 @@ void Photon::scatter()
 
 
     //prepare random numbers
-    Float randChannel;
-	Float randRect;
-	Float randX;
-	Float randY;
-	Float randPhi;
-
-	#pragma omp critical
-	{
-	    randChannel = random();
-		randRect    = random();
-		randX       = random();
-		randY       = random();
-		randPhi     = random();
-	}
-
+    Float randChannel = random();
+	Float randRect    = random();
+	Float randX       = random();
+	Float randY       = random();
+	Float randPhi     = random();
 
     Vector3 nn;
     Matrix3 mtx;

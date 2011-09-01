@@ -12,7 +12,7 @@ typedef std::list<ChunkParam>       ChunkParamsList;
 
 struct ScatteringOrder
 {
-    ScatteringOrder(const int order_, const std::string fileName_, Float** data_) :
+    ScatteringOrder(const int order_, const std::string& fileName_, Float** data_ = NULL) :
         order(order_),
         fileName(fileName_),
         data(data_),
@@ -65,7 +65,7 @@ public:
 	static const Float kThetaStep;
 	static const Float kPhiStep;
 
-	static const int   kSaveRate = 2; //save results each on each kSaveRate photons simulated
+	static const int   kSeedIncrement = 1000; //random generator seeds in threads differ by this number
 
 
 
@@ -199,6 +199,8 @@ private:
     int m_photonCnt;
 
     ChunkParamsList    m_chunkParams;
+
+    typedef ScatteringOrderFiles::iterator Iter;
 	
     ScatteringOrderFiles m_ladderFiles;
     ScatteringOrderFiles m_cyclicFiles;

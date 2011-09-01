@@ -22,7 +22,7 @@ Node::~Node()
 	delete pChild2;
 }
 
-bool Node::isLeaf()
+bool Node::isLeaf() const
 {
 	return (NULL == pChild1) && (NULL == pChild2); 
 }
