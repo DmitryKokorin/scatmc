@@ -37,6 +37,83 @@ int main(int argc, char ** argv)
 	return res;
 }
 
+/////////////////////////////////////////////
+
+MeasuredData::MeasuredData(const int order_) :
+    data(NULL),
+    order(order_)
+{
+    data = allocate2dArray<Float>(ScatMCApp::kPhiSize, ScatMCApp::kThetaSize);
+}
+
+MeasuredData::~MeasuredData()
+{
+    free2dArray(data);
+}
+
+MeasuredData::MeasuredData(const MeasuredData& other) :
+    data(),
+    order(other.order)
+{
+    data = allocate2dArray<Float>(ScatMCApp::kPhiSize, ScatMCApp::kThetaSize);
+}
+
+MeasuredData& MeasuredData::operator=(const MeasuredData& other)
+{
+    order = other.order;
+    memcpy(data[0], other.data[0], sizeof(data[0][0])*ScatMCApp::kPhiSize*ScatMCApp::kThetaSize);
+
+    return *this;
+}
+
+
+MeasuredData& MeasuredData::operator+=(const MeasuredData& other)
+{
+    int size = ScatMCApp::kPhiSize * ScatMCApp::kThetaSize;
+
+    for (int i = 0; i < size; ++i)
+       (*data)[i] += (*(other.data))[i] ;
+
+    return *this;
+}
+
+void MeasuredData::clear()
+{
+    memset(&(data[0][0]), 0, sizeof(Float)*ScatMCApp::kPhiSize*ScatMCApp::kThetaSize);
+}
+
+/////////////////////////////////////////////
+
+
+DataFile::DataFile(const int order_, const std::string& fileName_) :
+        data(order_),
+        fileName(fileName_)
+{}
+
+void DataFile::output()
+{
+    FILE* file = fopen(fileName.c_str(), "w");
+
+   	for (int i = 0; i < ScatMCApp::kThetaSize; ++i) {
+
+	    Float theta = i*ScatMCApp::kThetaStep;
+
+		for (int j = 0; j < ScatMCApp::kPhiSize; ++j) {
+
+			Float phi   = j*ScatMCApp::kPhiStep;
+
+    		fprintf(file,     "%e\t%e\t%.17e\n", theta, phi, data.data[j][i]);
+        }
+	}
+
+
+    fclose(file);
+}
+
+
+
+/////////////////////////////////////////////
+
 const Float ScatMCApp::kThetaMax = 1e-4;
 const Float ScatMCApp::kThetaStep = ScatMCApp::kThetaMax / ScatMCApp::kThetaSize;
 const Float ScatMCApp::kPhiStep   = 2*M_PI / ScatMCApp::kPhiSize;
@@ -86,11 +163,12 @@ ScatMCApp::ScatMCApp() :
 	m_maxScatterings(100000),
 	m_minPhotonWeight(1e-8),
     m_photonCnt(0),
+    m_saveRate(1),
 	m_chunkParams(),
 	m_ladderFiles(),
 	m_cyclicFiles(),
-	m_dataLadder(),
-	m_dataCyclic()
+	m_ladder(0, ""),
+	m_cyclic(0, "")
 {
 }
 
@@ -370,29 +448,6 @@ int ScatMCApp::run()
     fprintf(stderr, "# seed = %d\n", getSeed());
 
 
-    //allocate arrays of full data
-    m_dataCyclic = allocate2dArray<Float>(kPhiSize, kThetaSize);
-    m_dataLadder = allocate2dArray<Float>(kPhiSize, kThetaSize);
-
-    //allocate arrays for individual scattering orders data
-    int orders[] = {1, 2, 3, 4, 5, 10, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000};
-    int ordersLength = sizeof(orders)/sizeof(orders[0]);
-
-    for (int i = 0; i < ordersLength; ++i) {
-
-        std::string       s1;
-        std::stringstream ss1(s1);
-
-        ss1 << m_workDir << "ladder" << orders[i] << ".txt";
-        m_ladderFiles.push_back(ScatteringOrder(orders[i], ss1.str(), allocate2dArray<Float>(kPhiSize, kThetaSize))); 
-
-        std::string       s2;
-        std::stringstream ss2(s2);
-
-
-        ss2 << m_workDir << "cyclic" << orders[i] << ".txt";
-        m_cyclicFiles.push_back(ScatteringOrder(orders[i], ss2.str(), allocate2dArray<Float>(kPhiSize, kThetaSize))); 
-    }
 
 
 	int res = 0;
@@ -468,20 +523,78 @@ int ScatMCApp::run()
 	Photon::init(&m_oLength, &m_eLength, &pOE, &pEO, &pEE, &oEscFunction, &eEscFunction, &m_eChannelProb);
 
 
+    std::stringstream ss("");
+    ss << m_workDir << "ladder.txt";
+    m_ladder.fileName = ss.str();
+
+    ss.str("");
+    ss << m_workDir << "cyclic.txt";
+    m_cyclic.fileName = ss.str();
+
+
+    //allocate arrays for individual scattering orders data
+    int orders[] = {1, 2, 3, 4, 5, 10, 50, 100, 300, 500, 1000, 3000, 5000, 10000, 30000, 50000, 100000};
+    int ordersLength = sizeof(orders)/sizeof(orders[0]);
+
+    for (int i = 0; i < ordersLength; ++i) {
+
+        ss.str("");
+        ss << m_workDir << "ladder" << orders[i] << ".txt";
+        m_ladderFiles.push_back(DataFile(orders[i], ss.str())); 
+
+        ss.str("");
+        ss << m_workDir << "cyclic" << orders[i] << ".txt";
+        m_cyclicFiles.push_back(DataFile(orders[i], ss.str())); 
+    }
+
+
     //main loop
-
-    RngEngine rng_engine;
-    int saveRate = omp_get_max_threads();
-
-	#pragma omp parallel private (rng_engine)
+    
+    const int flushRate = 5;//20;
+    m_saveRate = omp_get_max_threads()*flushRate;
+    
+	#pragma omp parallel
     {
-
+        RngEngine rng_engine;
         rng_engine.seed(m_seed + kSeedIncrement*omp_get_thread_num());
+
+        DataList ladderDataList;
+        DataList cyclicDataList;
+
+        for (int i = 0; i < ordersLength; ++i) {
+
+            ladderDataList.push_back(MeasuredData(orders[i])); 
+            cyclicDataList.push_back(MeasuredData(orders[i])); 
+        }
+
+        MeasuredData ladderData(0);
+        MeasuredData cyclicData(0);
+
+        bool flush = false;
+        int  scatteredCount = 0;
         
         #pragma omp for schedule (dynamic)
-    	for (int i = 0; i < m_maxPhotons; ++i) {
+        for (int i = 0; i < m_maxPhotons; ++i) {
 
 	    	Photon ph(rng_engine);
+
+	    	typedef DataList::iterator Iter;
+
+	    	if (flush) {
+
+	    	    flush = false;
+	    	    scatteredCount = 0;
+
+	    	    ladderData.clear();
+	    	    cyclicData.clear();
+	    	    
+	    	    for (Iter iter = ladderDataList.begin(); iter != ladderDataList.end(); ++iter)
+	    	        iter->clear();
+
+	    	    for (Iter iter = cyclicDataList.begin(); iter != cyclicDataList.end(); ++iter)
+	    	        iter->clear();
+            }
+
 
 		    while (ph.pos.z() >= 0.
 		            && ph.scatterings < m_maxScatterings
@@ -490,25 +603,23 @@ int ScatMCApp::run()
     			ph.move();
 
                 if (Optics::OCHANNEL == ph.channel)
-    	    		processScattering<Optics::OBeam>(ph);
+    	    		processScattering<Optics::OBeam>(ph, ladderData, cyclicData, ladderDataList, cyclicDataList);
                 else
-               	    processScattering<Optics::EBeam>(ph);
+               	    processScattering<Optics::EBeam>(ph, ladderData, cyclicData, ladderDataList, cyclicDataList);
 
     
 	    		ph.scatter();
-
 		    }
 
 
-		    #pragma omp critical
-		    {
-			    ++m_photonCnt;
-			    fprintf(stderr, "Photon: %d\tScatterings: %d\n", m_photonCnt, ph.scatterings);
+            if (++scatteredCount == flushRate) {
 
-			    if (0 == m_photonCnt % saveRate)
-                    output();
-		    }
+                flush = true;
+                flushBuffers(scatteredCount, ladderData, cyclicData, ladderDataList, cyclicDataList);
+            }
 	    }
+
+	    flushBuffers(scatteredCount, ladderData, cyclicData, ladderDataList, cyclicDataList);
     }
 
 	output();
@@ -516,10 +627,49 @@ int ScatMCApp::run()
 	return 0;
 }
 
+void ScatMCApp::flushBuffers(   const int scatteredCount,
+                                const MeasuredData& ladderData, 
+                                const MeasuredData& cyclicData,
+                                const DataList& ladderDataList,
+                                const DataList& cyclicDataList)
+{
+    #pragma omp critical
+	{
+
+        typedef DataList::const_iterator Iter;
+
+
+		m_photonCnt += scatteredCount;
+
+        m_ladder.data += ladderData;
+        m_cyclic.data += cyclicData;
+
+        DataFilesList::iterator iter2 = m_ladderFiles.begin();
+
+       	for (Iter iter = ladderDataList.begin(); iter != ladderDataList.end(); ++iter, ++iter2) {
+       	    	        
+    	    iter2->data += (*iter);
+        }
+
+        iter2 = m_cyclicFiles.begin();
+
+	    for (Iter iter = cyclicDataList.begin(); iter != cyclicDataList.end(); ++iter, ++iter2) {
+       	    	        
+    	    iter2->data += (*iter);
+        }
+
+
+
+		fprintf(stderr, "Photons: %d\n", m_photonCnt);
+
+		if (0 == m_photonCnt % m_saveRate)
+            output();
+	}
+}
 
 
 template <class T>
-void ScatMCApp::processScattering(const Photon& ph)
+void ScatMCApp::processScattering(const Photon& ph, MeasuredData& ladder, MeasuredData& cyclic, DataList& ladderList, DataList& cyclicList)
 {
     Indicatrix<T, Optics::OBeam> indO(ph.s_i, Optics::director);
 	Indicatrix<T, Optics::EBeam> indE(ph.s_i, Optics::director);
@@ -533,7 +683,7 @@ void ScatMCApp::processScattering(const Photon& ph)
         norm = m_eNorm(otheta);
 
 
-    #pragma omp critical
+//    #pragma omp critical
 	{
 
 	for (int i = 0; i < kThetaSize; ++i)
@@ -572,22 +722,25 @@ void ScatMCApp::processScattering(const Photon& ph)
 			Float cyclicRes = ph.weight*(oLengthFactor*oProbFactor*cos(qo*R)
 			                           + eLengthFactor*eProbFactor*cos(qe*R));
 
-            for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
+
+			typedef DataList::iterator Iter;
+
+            for (Iter iter = ladderList.begin(); iter != ladderList.end(); ++iter) {
 
                 if (ph.scatterings + 1 == iter->order)
                     iter->data[j][i] += ladderRes;
             }
 
-            for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+            for (Iter iter = cyclicList.begin(); iter != cyclicList.end(); ++iter) {
                 
                  if (ph.scatterings + 1 == iter->order)
                     iter->data[j][i] += cyclicRes;
             }
 
-            m_dataLadder[j][i] += ladderRes;
+            ladder.data[j][i] += ladderRes;
 
             if (0 != ph.scatterings)
-                m_dataCyclic[j][i] += cyclicRes;
+                cyclic.data[j][i] += cyclicRes;
 		}
 	}
 }
@@ -595,62 +748,23 @@ void ScatMCApp::processScattering(const Photon& ph)
 
 void ScatMCApp::output()
 {
+    typedef DataFilesList::iterator Iter;
+
     for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
 
-        iter->file = fopen(iter->fileName.c_str(), "w");
+        iter->output();
     }
 
     for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
 
-        iter->file = fopen(iter->fileName.c_str(), "w");
+        iter->output();
     }
 
 
-    std::string fileName = m_workDir + "ladder.txt";
-	FILE* ladderFile     = fopen(fileName.c_str(), "w");
+    m_ladder.output();
+    m_cyclic.output();
 
-    fileName = m_workDir + "cyclic.txt";
-	FILE* cyclicFile     = fopen(fileName.c_str(), "w");
-
-
-
-	Float thetaStep = kThetaMax / kThetaSize;
-	Float phiStep   = 2*M_PI / kPhiSize;
-
-	for (int i = 0; i < kThetaSize; ++i)
-		for (int j = 0; j < kPhiSize; ++j) {
-
-			Float phi   = j*phiStep;
-			Float theta = i*thetaStep;
-
-            for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
-
-                fprintf(iter->file,     "%e\t%e\t%.17e\n", theta, phi, iter->data[j][i]);
-            }
-
-            for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
-
-                fprintf(iter->file,     "%e\t%e\t%.17e\n", theta, phi, iter->data[j][i]);
-            }
-
-			fprintf(ladderFile,   "%e\t%e\t%.17e\n", theta, phi, m_dataLadder[j][i]);
-			fprintf(cyclicFile,   "%e\t%e\t%.17e\n", theta, phi, m_dataCyclic[j][i]);
-		}
-
-
-    for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
-
-        fclose(iter->file);
-    }
-
-    for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
-
-        fclose(iter->file);
-    }
-
-
-    fclose(ladderFile);
-    fclose(cyclicFile);
+    fprintf(stderr, "(data saved)\n");
 }
 
 

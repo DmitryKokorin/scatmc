@@ -10,42 +10,41 @@
 typedef std::pair<Float, size_t>    ChunkParam;
 typedef std::list<ChunkParam>       ChunkParamsList;
 
-struct ScatteringOrder
+
+class MeasuredData
 {
-    ScatteringOrder(const int order_, const std::string& fileName_, Float** data_ = NULL) :
-        order(order_),
-        fileName(fileName_),
-        data(data_),
-        file(NULL)
-    {}
+public:
 
+    MeasuredData(const int order_ = 0);
+    ~MeasuredData();
 
-    ScatteringOrder(const ScatteringOrder& other) :
-        order(other.order),
-        fileName(other.fileName),
-        data(other.data),
-        file(NULL)
-    {}
+    MeasuredData& operator+=(const MeasuredData& other);
+    void clear();
 
+    Float** data;
+    int     order;  //scattering order. unused for total intensity data
 
+//private:
 
-    ScatteringOrder& operator=(const ScatteringOrder& other)
-    {
-        order    = other.order;
-        fileName = other.fileName;
-        data     = other.data;
-
-        return *this;
-    }
-
-    int         order;
-    std::string fileName;
-    Float**     data;
-    FILE*       file;
+    MeasuredData(const MeasuredData& other);
+    MeasuredData& operator=(const MeasuredData& other);
 };
 
 
-typedef std::list<ScatteringOrder>  ScatteringOrderFiles;
+class DataFile
+{
+public:
+
+    DataFile(const int order_, const std::string& fileName_);
+
+    void output();
+
+    MeasuredData data;
+    std::string fileName;
+};
+
+typedef std::list<MeasuredData> DataList;
+typedef std::list<DataFile>     DataFilesList;
 
 
 class ScatMCApp
@@ -134,7 +133,14 @@ private:
     int  prepareENorm(LinearInterpolation& norm);
 
     template <class T>
-	void processScattering(const Photon& ph);
+	void processScattering(const Photon& ph, MeasuredData& ladder, MeasuredData& cyclic, DataList& ladderList, DataList& cyclicList);
+
+	void flushBuffers(   const int scatteredCount,
+                         const MeasuredData& ladderData, 
+                         const MeasuredData& cyclicData,
+                         const DataList& ladderDataList,
+                         const DataList& cyclicDataList);
+
 
 	void output();
 
@@ -197,16 +203,15 @@ private:
 	Float m_minPhotonWeight;
 
     int m_photonCnt;
+    int m_saveRate;
 
     ChunkParamsList    m_chunkParams;
 
-    typedef ScatteringOrderFiles::iterator Iter;
-	
-    ScatteringOrderFiles m_ladderFiles;
-    ScatteringOrderFiles m_cyclicFiles;
+    DataFilesList m_ladderFiles;
+    DataFilesList m_cyclicFiles;
 
-    Float **m_dataLadder;
-    Float **m_dataCyclic;
+    DataFile m_ladder;
+    DataFile m_cyclic;
 
 private:
 
