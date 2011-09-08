@@ -550,7 +550,7 @@ int ScatMCApp::run()
 
     //main loop
     
-    const int flushRate = 5;//20;
+    const int flushRate = 20;
     m_saveRate = omp_get_max_threads()*flushRate;
     
 	#pragma omp parallel
