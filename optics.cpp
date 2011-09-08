@@ -12,6 +12,7 @@ const Float eps_perp = 2.2;
 const Float eps_a = eps_par - eps_perp;
 const Float _no = sqrt(eps_perp);
 
+
 const Float K3 = 6.1e-7;
 const Float t1 = 0.79;
 const Float t2 = 0.43;

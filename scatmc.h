@@ -133,14 +133,19 @@ private:
     int  prepareENorm(LinearInterpolation& norm);
 
     template <class T>
-	void processScattering(const Photon& ph, MeasuredData& ladder, MeasuredData& cyclic, DataList& ladderList, DataList& cyclicList);
+	void processScattering(const Photon& ph,
+	        MeasuredData& oLadder, MeasuredData& oCyclic, DataList& oLadderList, DataList& oCyclicList,
+	        MeasuredData& eLadder, MeasuredData& eCyclic, DataList& eLadderList, DataList& eCyclicList);
 
 	void flushBuffers(   const int scatteredCount,
-                         const MeasuredData& ladderData, 
-                         const MeasuredData& cyclicData,
-                         const DataList& ladderDataList,
-                         const DataList& cyclicDataList);
-
+                         const MeasuredData& oLadderData, 
+                         const MeasuredData& oCyclicData,
+                         const DataList& oLadderDataList,
+                         const DataList& oCyclicDataList,
+                         const MeasuredData& eLadderData, 
+                         const MeasuredData& eCyclicData,
+                         const DataList& eLadderDataList,
+                         const DataList& eCyclicDataList);
 
 	void output();
 
@@ -207,11 +212,15 @@ private:
 
     ChunkParamsList    m_chunkParams;
 
-    DataFilesList m_ladderFiles;
-    DataFilesList m_cyclicFiles;
+    DataFilesList m_oLadderFiles;
+    DataFilesList m_oCyclicFiles;
+    DataFilesList m_eLadderFiles;
+    DataFilesList m_eCyclicFiles;
 
-    DataFile m_ladder;
-    DataFile m_cyclic;
+    DataFile m_oLadder;
+    DataFile m_oCyclic;
+    DataFile m_eLadder;
+    DataFile m_eCyclic;
 
 private:
 

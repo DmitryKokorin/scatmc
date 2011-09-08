@@ -165,10 +165,14 @@ ScatMCApp::ScatMCApp() :
     m_photonCnt(0),
     m_saveRate(1),
 	m_chunkParams(),
-	m_ladderFiles(),
-	m_cyclicFiles(),
-	m_ladder(0, ""),
-	m_cyclic(0, "")
+	m_oLadderFiles(),
+	m_oCyclicFiles(),
+	m_eLadderFiles(),
+	m_eCyclicFiles(),
+	m_oLadder(0, ""),
+	m_oCyclic(0, ""),
+   	m_eLadder(0, ""),
+	m_eCyclic(0, "")
 {
 }
 
@@ -448,8 +452,6 @@ int ScatMCApp::run()
     fprintf(stderr, "# seed = %d\n", getSeed());
 
 
-
-
 	int res = 0;
 
     //free path
@@ -462,6 +464,7 @@ int ScatMCApp::run()
 
 	if (0 != res)
 		return res;
+
 
 	//channel probabilities
 	res = prepareEChannelProb(m_eChannelProb);
@@ -524,12 +527,21 @@ int ScatMCApp::run()
 
 
     std::stringstream ss("");
-    ss << m_workDir << "ladder.txt";
-    m_ladder.fileName = ss.str();
+    ss << m_workDir << "oladder.txt";
+    m_oLadder.fileName = ss.str();
 
     ss.str("");
-    ss << m_workDir << "cyclic.txt";
-    m_cyclic.fileName = ss.str();
+    ss << m_workDir << "ocyclic.txt";
+    m_oCyclic.fileName = ss.str();
+
+    ss.str("");
+    ss << m_workDir << "eladder.txt";
+    m_eLadder.fileName = ss.str();
+
+    ss.str("");
+    ss << m_workDir << "ecyclic.txt";
+    m_eCyclic.fileName = ss.str();
+
 
 
     //allocate arrays for individual scattering orders data
@@ -539,12 +551,20 @@ int ScatMCApp::run()
     for (int i = 0; i < ordersLength; ++i) {
 
         ss.str("");
-        ss << m_workDir << "ladder" << orders[i] << ".txt";
-        m_ladderFiles.push_back(DataFile(orders[i], ss.str())); 
+        ss << m_workDir << "oladder" << orders[i] << ".txt";
+        m_oLadderFiles.push_back(DataFile(orders[i], ss.str())); 
 
         ss.str("");
-        ss << m_workDir << "cyclic" << orders[i] << ".txt";
-        m_cyclicFiles.push_back(DataFile(orders[i], ss.str())); 
+        ss << m_workDir << "ocyclic" << orders[i] << ".txt";
+        m_oCyclicFiles.push_back(DataFile(orders[i], ss.str()));
+
+        ss.str("");
+        ss << m_workDir << "eladder" << orders[i] << ".txt";
+        m_eLadderFiles.push_back(DataFile(orders[i], ss.str())); 
+
+        ss.str("");
+        ss << m_workDir << "ecyclic" << orders[i] << ".txt";
+        m_eCyclicFiles.push_back(DataFile(orders[i], ss.str())); 
     }
 
 
@@ -558,17 +578,24 @@ int ScatMCApp::run()
         RngEngine rng_engine;
         rng_engine.seed(m_seed + kSeedIncrement*omp_get_thread_num());
 
-        DataList ladderDataList;
-        DataList cyclicDataList;
+        DataList oLadderDataList;
+        DataList oCyclicDataList;
+        DataList eLadderDataList;
+        DataList eCyclicDataList;
+
 
         for (int i = 0; i < ordersLength; ++i) {
 
-            ladderDataList.push_back(MeasuredData(orders[i])); 
-            cyclicDataList.push_back(MeasuredData(orders[i])); 
+            oLadderDataList.push_back(MeasuredData(orders[i])); 
+            oCyclicDataList.push_back(MeasuredData(orders[i]));
+            eLadderDataList.push_back(MeasuredData(orders[i])); 
+            eCyclicDataList.push_back(MeasuredData(orders[i])); 
         }
 
-        MeasuredData ladderData(0);
-        MeasuredData cyclicData(0);
+        MeasuredData oLadderData(0);
+        MeasuredData oCyclicData(0);
+        MeasuredData eLadderData(0);
+        MeasuredData eCyclicData(0);
 
         bool flush = false;
         int  scatteredCount = 0;
@@ -585,14 +612,24 @@ int ScatMCApp::run()
 	    	    flush = false;
 	    	    scatteredCount = 0;
 
-	    	    ladderData.clear();
-	    	    cyclicData.clear();
+	    	    oLadderData.clear();
+	    	    oCyclicData.clear();
 	    	    
-	    	    for (Iter iter = ladderDataList.begin(); iter != ladderDataList.end(); ++iter)
+	    	    for (Iter iter = oLadderDataList.begin(); iter != oLadderDataList.end(); ++iter)
 	    	        iter->clear();
 
-	    	    for (Iter iter = cyclicDataList.begin(); iter != cyclicDataList.end(); ++iter)
+	    	    for (Iter iter = oCyclicDataList.begin(); iter != oCyclicDataList.end(); ++iter)
 	    	        iter->clear();
+
+   	    	    eLadderData.clear();
+	    	    eCyclicData.clear();
+	    	    
+	    	    for (Iter iter = eLadderDataList.begin(); iter != eLadderDataList.end(); ++iter)
+	    	        iter->clear();
+
+	    	    for (Iter iter = eCyclicDataList.begin(); iter != eCyclicDataList.end(); ++iter)
+	    	        iter->clear();
+
             }
 
 
@@ -602,10 +639,16 @@ int ScatMCApp::run()
 
     			ph.move();
 
-                if (Optics::OCHANNEL == ph.channel)
-    	    		processScattering<Optics::OBeam>(ph, ladderData, cyclicData, ladderDataList, cyclicDataList);
+                if (Optics::OCHANNEL == ph.channel) {
+
+    	    		processScattering<Optics::OBeam>(ph,
+    	    		        oLadderData, oCyclicData, oLadderDataList, oCyclicDataList,
+    	    		        eLadderData, eCyclicData, eLadderDataList, eCyclicDataList);
+                }
                 else
-               	    processScattering<Optics::EBeam>(ph, ladderData, cyclicData, ladderDataList, cyclicDataList);
+               	    processScattering<Optics::EBeam>(ph,
+    	    		        oLadderData, oCyclicData, oLadderDataList, oCyclicDataList,
+    	    		        eLadderData, eCyclicData, eLadderDataList, eCyclicDataList);
 
     
 	    		ph.scatter();
@@ -615,11 +658,15 @@ int ScatMCApp::run()
             if (++scatteredCount == flushRate) {
 
                 flush = true;
-                flushBuffers(scatteredCount, ladderData, cyclicData, ladderDataList, cyclicDataList);
+                flushBuffers(scatteredCount,
+                        oLadderData, oCyclicData, oLadderDataList, oCyclicDataList,
+                        eLadderData, eCyclicData, eLadderDataList, eCyclicDataList);
             }
 	    }
 
-	    flushBuffers(scatteredCount, ladderData, cyclicData, ladderDataList, cyclicDataList);
+	    flushBuffers(scatteredCount,
+                        oLadderData, oCyclicData, oLadderDataList, oCyclicDataList,
+                        eLadderData, eCyclicData, eLadderDataList, eCyclicDataList);
     }
 
 	output();
@@ -628,10 +675,14 @@ int ScatMCApp::run()
 }
 
 void ScatMCApp::flushBuffers(   const int scatteredCount,
-                                const MeasuredData& ladderData, 
-                                const MeasuredData& cyclicData,
-                                const DataList& ladderDataList,
-                                const DataList& cyclicDataList)
+                                const MeasuredData& oLadderData, 
+                                const MeasuredData& oCyclicData,
+                                const DataList& oLadderDataList,
+                                const DataList& oCyclicDataList,
+                                const MeasuredData& eLadderData, 
+                                const MeasuredData& eCyclicData,
+                                const DataList& eLadderDataList,
+                                const DataList& eCyclicDataList)
 {
     #pragma omp critical
 	{
@@ -641,23 +692,39 @@ void ScatMCApp::flushBuffers(   const int scatteredCount,
 
 		m_photonCnt += scatteredCount;
 
-        m_ladder.data += ladderData;
-        m_cyclic.data += cyclicData;
+        m_oLadder.data += oLadderData;
+        m_oCyclic.data += oCyclicData;
+        m_eLadder.data += eLadderData;
+        m_eCyclic.data += eCyclicData;
 
-        DataFilesList::iterator iter2 = m_ladderFiles.begin();
 
-       	for (Iter iter = ladderDataList.begin(); iter != ladderDataList.end(); ++iter, ++iter2) {
+        DataFilesList::iterator iter2 = m_oLadderFiles.begin();
+
+       	for (Iter iter = oLadderDataList.begin(); iter != oLadderDataList.end(); ++iter, ++iter2) {
        	    	        
     	    iter2->data += (*iter);
         }
 
-        iter2 = m_cyclicFiles.begin();
+        iter2 = m_oCyclicFiles.begin();
 
-	    for (Iter iter = cyclicDataList.begin(); iter != cyclicDataList.end(); ++iter, ++iter2) {
+	    for (Iter iter = oCyclicDataList.begin(); iter != oCyclicDataList.end(); ++iter, ++iter2) {
        	    	        
     	    iter2->data += (*iter);
         }
 
+        iter2 = m_eLadderFiles.begin();
+
+       	for (Iter iter = eLadderDataList.begin(); iter != eLadderDataList.end(); ++iter, ++iter2) {
+       	    	        
+    	    iter2->data += (*iter);
+        }
+
+        iter2 = m_eCyclicFiles.begin();
+
+	    for (Iter iter = eCyclicDataList.begin(); iter != eCyclicDataList.end(); ++iter, ++iter2) {
+       	    	        
+    	    iter2->data += (*iter);
+        }
 
 
 		fprintf(stderr, "Photons: %d\n", m_photonCnt);
@@ -669,7 +736,9 @@ void ScatMCApp::flushBuffers(   const int scatteredCount,
 
 
 template <class T>
-void ScatMCApp::processScattering(const Photon& ph, MeasuredData& ladder, MeasuredData& cyclic, DataList& ladderList, DataList& cyclicList)
+void ScatMCApp::processScattering(const Photon& ph,
+        MeasuredData& oLadder, MeasuredData& oCyclic, DataList& oLadderList, DataList& oCyclicList,
+        MeasuredData& eLadder, MeasuredData& eCyclic, DataList& eLadderList, DataList& eCyclicList)
 {
     Indicatrix<T, Optics::OBeam> indO(ph.s_i, Optics::director);
 	Indicatrix<T, Optics::EBeam> indE(ph.s_i, Optics::director);
@@ -682,9 +751,6 @@ void ScatMCApp::processScattering(const Photon& ph, MeasuredData& ladder, Measur
     else
         norm = m_eNorm(otheta);
 
-
-//    #pragma omp critical
-	{
 
 	for (int i = 0; i < kThetaSize; ++i)
 		for (int j = 0; j < kPhiSize; ++j) {
@@ -717,32 +783,49 @@ void ScatMCApp::processScattering(const Photon& ph, MeasuredData& ladder, Measur
 			Float oProbFactor = indO(s_s)/norm;
 			Float eProbFactor = indE(s_s)/norm;
 
-			Float ladderRes = ph.weight*(oLengthFactor*oProbFactor + eLengthFactor*eProbFactor);
+			Float oLadderRes = ph.weight*(oLengthFactor*oProbFactor);
+			Float oCyclicRes = ph.weight*(oLengthFactor*oProbFactor*cos(qo*R));
+			Float eLadderRes = ph.weight*(eLengthFactor*eProbFactor);
+			Float eCyclicRes = ph.weight*(eLengthFactor*eProbFactor*cos(qe*R));
 
-			Float cyclicRes = ph.weight*(oLengthFactor*oProbFactor*cos(qo*R)
-			                           + eLengthFactor*eProbFactor*cos(qe*R));
 
 
 			typedef DataList::iterator Iter;
 
-            for (Iter iter = ladderList.begin(); iter != ladderList.end(); ++iter) {
+            for (Iter iter = oLadderList.begin(); iter != oLadderList.end(); ++iter) {
 
                 if (ph.scatterings + 1 == iter->order)
-                    iter->data[j][i] += ladderRes;
+                    iter->data[j][i] += oLadderRes;
             }
 
-            for (Iter iter = cyclicList.begin(); iter != cyclicList.end(); ++iter) {
+            for (Iter iter = oCyclicList.begin(); iter != oCyclicList.end(); ++iter) {
                 
                  if (ph.scatterings + 1 == iter->order)
-                    iter->data[j][i] += cyclicRes;
+                    iter->data[j][i] += oCyclicRes;
+            }
+            
+            for (Iter iter = eLadderList.begin(); iter != eLadderList.end(); ++iter) {
+
+                if (ph.scatterings + 1 == iter->order)
+                    iter->data[j][i] += eLadderRes;
             }
 
-            ladder.data[j][i] += ladderRes;
+            for (Iter iter = eCyclicList.begin(); iter != eCyclicList.end(); ++iter) {
+                
+                 if (ph.scatterings + 1 == iter->order)
+                    iter->data[j][i] += eCyclicRes;
+            }
 
-            if (0 != ph.scatterings)
-                cyclic.data[j][i] += cyclicRes;
+
+            oLadder.data[j][i] += oLadderRes;
+            eLadder.data[j][i] += eLadderRes;
+
+            if (0 != ph.scatterings) {
+
+                oCyclic.data[j][i] += oCyclicRes;
+                eCyclic.data[j][i] += eCyclicRes;
+            }
 		}
-	}
 }
 
 
@@ -750,19 +833,33 @@ void ScatMCApp::output()
 {
     typedef DataFilesList::iterator Iter;
 
-    for (Iter iter = m_ladderFiles.begin(); iter != m_ladderFiles.end(); ++iter) {
+    for (Iter iter = m_oLadderFiles.begin(); iter != m_oLadderFiles.end(); ++iter) {
 
         iter->output();
     }
 
-    for (Iter iter = m_cyclicFiles.begin(); iter != m_cyclicFiles.end(); ++iter) {
+    for (Iter iter = m_oCyclicFiles.begin(); iter != m_oCyclicFiles.end(); ++iter) {
+
+        iter->output();
+    }
+
+    m_oLadder.output();
+    m_oCyclic.output();
+
+    for (Iter iter = m_eLadderFiles.begin(); iter != m_eLadderFiles.end(); ++iter) {
+
+        iter->output();
+    }
+
+    for (Iter iter = m_eCyclicFiles.begin(); iter != m_eCyclicFiles.end(); ++iter) {
 
         iter->output();
     }
 
 
-    m_ladder.output();
-    m_cyclic.output();
+    m_eLadder.output();
+    m_eCyclic.output();
+
 
     fprintf(stderr, "(data saved)\n");
 }
